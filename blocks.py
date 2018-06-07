@@ -2,6 +2,7 @@ import hashlib
 import datetime
 import geocoder
 import subprocess
+import json
 
 class Block:
     """
@@ -27,13 +28,8 @@ class Block:
         Run hash algorithm on block object to create fingerprint.
         :return: Returns the block's hash key.
         """
-        hash = hashlib.sha3_256()
-        hash.update(str(self.index) +
-                   str(self.timestamp) +
-                   str(self.location) +
-                   str(self.data) +
-                   str(self.previous_hash))
-        return hash.hexdigest()
+        block = json.dumps(self.__dict__, sort_keys=True)
+        return hashlib.sha3_256(block.encode()).hexdigest()
 
 class Genesis(Block):
     """
@@ -62,6 +58,10 @@ class Chain:
         genesis = Genesis()
         self.chain.append(genesis)
 
+    @property
+    def last_block(self):
+        return self.chain[-1]
+
     def add_block(self):
         """
         Add new block to chain.
@@ -76,9 +76,9 @@ class Chain:
         self.chain.append(block)
         return block
 
-    def transaction(self, sender, recipient, quantity):
+    def add_transaction(self, sender, recipient, quantity):
         """
-        Create a new transaction. The latest transaction data is placed in the data attribute of the latest block.
+        Add a new transaction. The latest transaction data is placed in the data attribute of the latest block.
         :param sender: Specifies the sender.
         :param recipient: Specifies the recipient.
         :param quantity: Specifies the quantity.

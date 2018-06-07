@@ -10,9 +10,8 @@
 PhotoBlocks is a blockchain system built on an image recognition mining system. You can earn coins by taking photos, and you trade coins with others.
 
 ## Mining
-As with most blockchain systems, PhotoBlocks has a Proof-of-Work implementation.
-PhotoBlocks uses [TensorFlow](https://www.tensorflow.org/tutorials/image_recognition) to implement a Proof-of-Work mechanism based on image recognition.
-Clone the [models](https://github.com/tensorflow/models) repository. 
+PhotoBlocks uses [TensorFlow](https://www.tensorflow.org/tutorials/image_recognition) for image recognition.
+To use TensorFlow for image classification (Inception trained on ImageNet 2012 Challenge data), clone the [models](https://github.com/tensorflow/models) repository. 
 
 ## Trading
 Trading coins on PhotoBlocks works like other blockchain systems.
