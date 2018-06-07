@@ -1,6 +1,7 @@
 import hashlib
 import datetime
 import geocoder
+import subprocess
 
 class Block:
     """
@@ -85,3 +86,12 @@ class Chain:
         """
         data = {"sender": sender, "recipient": recipient, "quantity": quantity}
         self.transactions.append(data)
+
+    @staticmethod
+    def proof(file, target):
+        """
+        Validates the "proof".
+        :return: Returns True if valid, False if not.
+        """
+        image = subprocess.run(["models/tutorials/image/imagenet/classify_image.py", "--image-file" + file])
+        return image == target

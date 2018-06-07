@@ -1,3 +1,6 @@
+from blocks import Chain, Block, Genesis
 import flask
 
-node = flask.Flask(__name__)
+app = flask.Flask(__name__)
+
+blockchain = Chain()
