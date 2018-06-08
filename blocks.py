@@ -31,20 +31,6 @@ class Block:
         block = json.dumps(self.__dict__, sort_keys=True)
         return hashlib.sha3_256(block.encode()).hexdigest()
 
-class Genesis(Block):
-    """
-    The Genesis class inherits from the Block class and defines the Genesis Block.
-    """
-    def __init__(self):
-        """
-        Create instance of Genesis class.
-        """
-        self.index = 0
-        self.timestamp = datetime.datetime.now()
-        self.data = {"name": "The First Block", "sender": "God", "recipient": "Mankind", "quantity": 0}
-        self.location = str(geocoder.ip('me')[0])
-        self.last_hash = "0"
-
 class Chain:
     """
     The Chain class implements the blockchain: a list of linked blocks.
@@ -55,14 +41,17 @@ class Chain:
         """
         self.transactions = []
         self.chain = []
-        genesis = Genesis()
+        gen_data = {"name": "The First Block", "sender": "God", "recipient": "Mankind", "quantity": 0}
+        gen_location = str(geocoder.ip('me')[0])
+        genesis = Block(0, datetime.datetime.now(), gen_data, gen_location, "0")
         self.chain.append(genesis)
 
     @property
     def last_block(self):
         return self.chain[-1]
 
-    def proof_of_work(self, block):
+    @staticmethod
+    def proof_of_work(block):
         """
         Tries different nonce values until the hash matches.
         :param block: block object
@@ -92,7 +81,8 @@ class Chain:
         self.chain.append(block)
         return block
 
-    def is_valid_hash(self, block, block_hash):
+    @staticmethod
+    def is_valid_hash(block, block_hash):
         return block_hash.startswith('0') and block_hash == block.hash_block()
 
     def add_transaction_fields(self, sender, recipient, quantity):
@@ -114,8 +104,7 @@ class Chain:
         """
         self.transactions.append(data)
 
-    @classmethod
-    def is_valid_chain(cls, chain):
+    def is_valid_chain(self, chain):
         result = True
         last_hash = "0"
 
@@ -123,7 +112,7 @@ class Chain:
             block_hash = block.hash
             delattr(block, "hash")
 
-            if not cls.is_valid_hash(block, block.hash) or last_hash != block.last_hash:
+            if not self.is_valid_hash(block, block.hash) or last_hash != block.last_hash:
                 result = False
                 break
 
