@@ -62,6 +62,21 @@ class Chain:
     def last_block(self):
         return self.chain[-1]
 
+    def proof_of_work(self, block):
+        """
+        Tries different nonce values until the hash matches.
+        :param block: block object
+        :return: Returns matching hash.
+        """
+        block.nonce = 0
+
+        this_hash = block.hash_block()
+        while this_hash.startswith('0')
+            block.nonce += 1
+            this_hash = block.hash_block()
+
+        return this_hash
+
     def add_block(self):
         """
         Add new block to chain.
@@ -71,14 +86,18 @@ class Chain:
         timestamp = datetime.datetime.now()
         location = str(geocoder.ip('me')[0])
         data = self.transactions[index]
-        last_hash = self.chain[-1]
+        last_hash = self.last_block.hash
         block = Block(index, timestamp, data, location, last_hash)
+        block.hash = block.hash_block()
         self.chain.append(block)
         return block
 
-    def add_transaction(self, sender, recipient, quantity):
+    def is_valid_hash(self, block, block_hash):
+        return block_hash.startswith('0') and block_hash == block.hash_block()
+
+    def add_transaction_fields(self, sender, recipient, quantity):
         """
-        Add a new transaction. The latest transaction data is placed in the data attribute of the latest block.
+        Add a new transaction with field data. The latest transaction data is placed in the data attribute of the latest block.
         :param sender: Specifies the sender.
         :param recipient: Specifies the recipient.
         :param quantity: Specifies the quantity.
@@ -87,11 +106,38 @@ class Chain:
         data = {"sender": sender, "recipient": recipient, "quantity": quantity}
         self.transactions.append(data)
 
-    @staticmethod
-    def proof(file, target):
+    def add_transaction_data(self, data):
         """
-        Validates the "proof".
-        :return: Returns True if valid, False if not.
+        Add a new transaction from JSON data. The latest transaction data is placed in the data attribute of the latest block.
+        :param data: Specifies the data (JSON).
+        :return:
+        """
+        self.transactions.append(data)
+
+    @classmethod
+    def is_valid_chain(cls, chain):
+        result = True
+        last_hash = "0"
+
+        for block in chain:
+            block_hash = block.hash
+            delattr(block, "hash")
+
+            if not cls.is_valid_hash(block, block.hash) or last_hash != block.last_hash:
+                result = False
+                break
+
+            block.hash, last_hash = block_hash, block_hash
+
+        return result
+
+
+    @staticmethod
+    def image_match(file, target):
+        """
+        :param file: Input image file
+        :param target: Target image category
+        :return: True if image from file matches image category, False if not.
         """
         image = subprocess.run(["models/tutorials/image/imagenet/classify_image.py", "--image-file" + file])
         return image == target

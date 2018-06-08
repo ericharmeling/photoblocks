@@ -1,5 +1,5 @@
-from blocks import Chain, Block, Genesis
-from flask import Flask
+from blocks import Chain
+from flask import Flask, request
 import datetime
 import requests
 import json
@@ -12,7 +12,7 @@ peers = set()
 
 @app.route('/transaction', methods=['POST'])
 def new_transaction():
-    data = requests.get_json()
+    data = request.get_json()
     fields = ["sender", "recipient", "quantity"]
 
     for field in fields:
@@ -21,7 +21,7 @@ def new_transaction():
 
     data["timestamp"] = datetime.datetime.now()
 
-    blockchain.add_transaction(data)
+    blockchain.add_transaction_data(data)
 
     return "OK", 201
 
@@ -32,4 +32,23 @@ def get_chain():
         data.append(block.__dict__)
     return json.dumps({"length": len(data), "chain": data})
 
-@app.route('/mine', methods=['GET'])
+def consensus():
+
+    global blockchain
+
+    longest_chain = None
+    n = len(blockchain.chain)
+
+    for node in peers:
+        response = requests.get('http://{}/chain'.format(node))
+        length = response.json()['length']
+        chain = response.json()['chain']
+        if length > n and blockchain.is_valid_chain(chain):
+            n = length
+            longest_chain = chain
+
+    if longest_chain:
+        blockchain = longest_chain
+        return True
+
+    return False
