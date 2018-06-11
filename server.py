@@ -32,6 +32,16 @@ def get_chain():
         data.append(block.__dict__)
     return json.dumps({"length": len(data), "chain": data})
 
+@app.route('/mine', methods=['GET'])
+def mine():
+    last_block = blockchain.last_block
+    proof = blockchain.proof_of_work(last_block)
+
+    blockchain.add_transaction_fields(sender="God", recipient=node_id, quantity=1)
+
+    block = blockchain.add_block(data)
+
+
 def consensus():
 
     global blockchain

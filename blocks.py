@@ -1,19 +1,18 @@
 import hashlib
 import datetime
 import geocoder
-import subprocess
 import json
 
 class Block:
     """
     The Block class contains transactional data.
     """
-    def __init__(self, index, timestamp, location, data, last_hash):
+    def __init__(self, index, timestamp, location, data, image, last_hash, proof):
         """
         Create instance of Block class.
         :param index: The index for the block.
         :param timestamp: The time and date the block was created.
-        :param location: The geolocation of the block. This is specified as City, State/Province, Country.
+        :param location: The geolocation of the block's creation. This is specified as City, State/Province, Country.
         :param data: The transactional data associated with the block.
         :param last_hash: The hash of the previous block in the chain.
         """
@@ -21,7 +20,9 @@ class Block:
         self.timestamp = timestamp
         self.location = location
         self.data = data
+        self.image = image
         self.last_hash = last_hash
+        self.proof = proof
 
     def hash_block(self):
         """
@@ -44,6 +45,7 @@ class Chain:
         gen_data = {"name": "The First Block", "sender": "God", "recipient": "Mankind", "quantity": 0}
         gen_location = str(geocoder.ip('me')[0])
         genesis = Block(0, datetime.datetime.now(), gen_data, gen_location, "0")
+        self.image = []
         self.chain.append(genesis)
 
     @property
@@ -60,13 +62,13 @@ class Chain:
         block.nonce = 0
 
         this_hash = block.hash_block()
-        while this_hash.startswith('0')
+        while this_hash.startswith('0'):
             block.nonce += 1
             this_hash = block.hash_block()
 
         return this_hash
 
-    def add_block(self):
+    def add_block(self, proof, data=[]):
         """
         Add new block to chain.
         :return: Returns the block added.
@@ -74,10 +76,8 @@ class Chain:
         index = len(self.chain) + 1
         timestamp = datetime.datetime.now()
         location = str(geocoder.ip('me')[0])
-        data = self.transactions[index]
-        last_hash = self.last_block.hash
-        block = Block(index, timestamp, data, location, last_hash)
-        block.hash = block.hash_block()
+        last_hash = self.last_block.hash_block()
+        block = Block(index, timestamp, data, location, last_hash, proof)
         self.chain.append(block)
         return block
 
@@ -119,14 +119,3 @@ class Chain:
             block.hash, last_hash = block_hash, block_hash
 
         return result
-
-
-    @staticmethod
-    def image_match(file, target):
-        """
-        :param file: Input image file
-        :param target: Target image category
-        :return: True if image from file matches image category, False if not.
-        """
-        image = subprocess.run(["models/tutorials/image/imagenet/classify_image.py", "--image-file" + file])
-        return image == target
