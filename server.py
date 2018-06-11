@@ -39,7 +39,8 @@ def mine():
 
     blockchain.add_transaction_fields(sender="God", recipient=node_id, quantity=1)
 
-    block = blockchain.add_block(data)
+    block = blockchain.add_block(data, proof)
+
 
 
 def consensus():
