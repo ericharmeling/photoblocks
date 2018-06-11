@@ -2,6 +2,7 @@ import hashlib
 import datetime
 import geocoder
 import json
+from images import image_match
 
 class Block:
     """
@@ -23,6 +24,7 @@ class Block:
         self.image = image
         self.last_hash = last_hash
         self.proof = proof
+        self.nonce = 0
 
     def hash_block(self):
         """
@@ -44,8 +46,8 @@ class Chain:
         self.chain = []
         gen_data = {"name": "The First Block", "sender": "God", "recipient": "Mankind", "quantity": 0}
         gen_location = str(geocoder.ip('me')[0])
-        genesis = Block(0, datetime.datetime.now(), gen_data, gen_location, "0")
-        self.image = []
+        gen_image = []
+        genesis = Block(0, datetime.datetime.now(), gen_location, gen_data, gen_image, "0", "0")
         self.chain.append(genesis)
 
     @property
@@ -53,22 +55,23 @@ class Chain:
         return self.chain[-1]
 
     @staticmethod
-    def proof_of_work(block):
+    def proof_of_work(block, target_image):
         """
         Tries different nonce values until the hash matches.
         :param block: block object
+        :param target_image: Image to match with photo.
         :return: Returns matching hash.
         """
-        block.nonce = 0
 
         this_hash = block.hash_block()
         while this_hash.startswith('0'):
             block.nonce += 1
             this_hash = block.hash_block()
 
-        return this_hash
+        if image_match(block.image, target_image):
+            return this_hash
 
-    def add_block(self, proof, data=[]):
+    def add_block(self, proof, image, data="0"):
         """
         Add new block to chain.
         :return: Returns the block added.
@@ -77,7 +80,7 @@ class Chain:
         timestamp = datetime.datetime.now()
         location = str(geocoder.ip('me')[0])
         last_hash = self.last_block.hash_block()
-        block = Block(index, timestamp, data, location, last_hash, proof)
+        block = Block(index, timestamp, location, data, image, last_hash, proof)
         self.chain.append(block)
         return block
 
@@ -87,7 +90,8 @@ class Chain:
 
     def add_transaction_fields(self, sender, recipient, quantity):
         """
-        Add a new transaction with field data. The latest transaction data is placed in the data attribute of the latest block.
+        Add a new transaction with field data. The latest transaction data is placed in the data attribute of the latest
+        block.
         :param sender: Specifies the sender.
         :param recipient: Specifies the recipient.
         :param quantity: Specifies the quantity.
@@ -98,24 +102,28 @@ class Chain:
 
     def add_transaction_data(self, data):
         """
-        Add a new transaction from JSON data. The latest transaction data is placed in the data attribute of the latest block.
+        Add a new transaction from JSON data object. The latest transaction data is placed in the data attribute of the
+        latest block.
         :param data: Specifies the data (JSON).
         :return:
         """
         self.transactions.append(data)
 
     def is_valid_chain(self, chain):
+        """
+        Checks if chain is valid. Might not be needed.
+        :param chain:
+        :return:
+        """
         result = True
         last_hash = "0"
 
         for block in chain:
-            block_hash = block.hash
-            delattr(block, "hash")
+            block_hash = block.proof
+            delattr(block, "proof")
 
-            if not self.is_valid_hash(block, block.hash) or last_hash != block.last_hash:
+            if not self.is_valid_hash(block, block.proof) or last_hash != block.last_hash:
                 result = False
                 break
-
-            block.hash, last_hash = block_hash, block_hash
 
         return result
