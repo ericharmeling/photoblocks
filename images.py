@@ -1,5 +1,4 @@
 import subprocess
-import Pillow
 
 def image_match(file, target):
     """
