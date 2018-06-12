@@ -8,13 +8,14 @@ class Block:
     """
     The Block class contains transactional data.
     """
-    def __init__(self, index, timestamp, location, data, image, last_hash, proof):
+    def __init__(self, index, timestamp, location, data, image, last_hash, nonce=0):
         """
         Create instance of Block class.
         :param index: The index for the block.
         :param timestamp: The time and date the block was created.
         :param location: The geolocation of the block's creation. This is specified as City, State/Province, Country.
         :param data: The transactional data associated with the block.
+        :param image: The matched image on the block.
         :param last_hash: The hash of the previous block in the chain.
         """
         self.index = index
@@ -23,8 +24,7 @@ class Block:
         self.data = data
         self.image = image
         self.last_hash = last_hash
-        self.proof = proof
-        self.nonce = 0
+        self.nonce = nonce
 
     def hash_block(self):
         """
@@ -47,7 +47,7 @@ class Chain:
         gen_data = {"name": "The First Block", "sender": "God", "recipient": "Mankind", "quantity": 0}
         gen_location = str(geocoder.ip('me')[0])
         gen_image = []
-        genesis = Block(0, datetime.datetime.now(), gen_location, gen_data, gen_image, "0", "0")
+        genesis = Block(0, datetime.datetime.now(), gen_location, gen_data, gen_image, "0")
         self.chain.append(genesis)
 
     @property
@@ -55,34 +55,50 @@ class Chain:
         return self.chain[-1]
 
     @staticmethod
-    def proof_of_work(block, target_image):
+    def proof_of_work(last_block, image, target_image):
         """
-        Tries different nonce values until the hash matches.
-        :param block: block object
+        Tries different nonce values until the hash meets the PoW requirements. This hash is only used in the PoW.
+        Image match is also required to solve PoW.
+        :param last_block: Last block.
+        :param image: Candidate image.
         :param target_image: Image to match with photo.
-        :return: Returns matching hash.
+        :return: Returns the matching nonce value.
         """
+        quick_block = last_block
+        quick_block.nonce = 0
 
-        this_hash = block.hash_block()
-        while this_hash.startswith('0'):
-            block.nonce += 1
-            this_hash = block.hash_block()
+        if image_match(image, target_image):
+            quick_block.image = image
+            quick_hash = quick_block.hash_block()
 
-        if image_match(block.image, target_image):
-            return this_hash
+            while quick_hash.startswith('0') is False:
+                quick_block.nonce += 1
 
-    def add_block(self, proof, image, data="0"):
+            return quick_block.nonce
+
+    def new_block(self, image, data="0", nonce="0"):
         """
-        Add new block to chain.
-        :return: Returns the block added.
+        Creates a new block with image, proof, and transaction data.
+        :param proof: The hash of the proven block.
+        :param image: The image of the proven block.
+        :param nonce: The nonce selected for the proven block.
+        :param data: The transactions of the proven block.
+        :return: Returns the block.
         """
         index = len(self.chain) + 1
         timestamp = datetime.datetime.now()
         location = str(geocoder.ip('me')[0])
         last_hash = self.last_block.hash_block()
-        block = Block(index, timestamp, location, data, image, last_hash, proof)
-        self.chain.append(block)
+        block = Block(index, timestamp, location, data, image, last_hash, nonce)
         return block
+
+    def add_block(self, block):
+        """
+        Adds new block to chain.
+        :param block: Block to add to chain
+        :return:
+        """
+        self.chain.append(block)
 
     @staticmethod
     def is_valid_hash(block, block_hash):
@@ -112,8 +128,8 @@ class Chain:
     def is_valid_chain(self, chain):
         """
         Checks if chain is valid. Might not be needed.
-        :param chain:
-        :return:
+        :param chain: Chain to check
+        :return: Returns True if chain is valid.
         """
         result = True
         last_hash = "0"
