@@ -18,6 +18,10 @@ temp_store = 'path' # temporary image store location
 
 peers = set()
 
+@app.route('/nodes/register', methods=['POST'])
+def register_node():
+    nodes = request.form
+
 @app.route('/transaction', methods=['POST'])
 def new_transaction():
     """
