@@ -8,9 +8,8 @@ import json
 app = Flask(__name__)
 CORS(app)
 
-node_id =
-
-global_target = "Car"
+node_id = 0 # unique node ID
+node_key = 0 # node public key (for mining rewards)
 
 blockchain = Chain()
 
@@ -20,7 +19,7 @@ peers = set()
 
 @app.route('/nodes/register', methods=['POST'])
 def register_node():
-    nodes = request.form
+    pass
 
 @app.route('/transaction', methods=['POST'])
 def new_transaction():
@@ -53,18 +52,23 @@ def get_chain():
         data.append(block.__dict__)
     return json.dumps({"length": len(data), "chain": data})
 
-@app.route('/mine', methods=['POST'])
+@app.route('/mine', methods=['POST', 'GET'])
 def mine():
-    image_file = request.file['file']
-    image_file.save(temp_store)
+    if request.method == 'POST':
+        image_file = request.file['file']
+        label = request.form['label']
+    else:
+        image_file = []
+        label = "Nothing"
 
-    new_block = blockchain.new_block(image_file, blockchain.transactions)
-    proof = blockchain.proof_of_work(new_block, global_target)
+    new_block = blockchain.new_block(image_file, label, blockchain.transactions)
+    proof = blockchain.proof_of_work(new_block)
 
-    blockchain.add_transaction_fields(sender="God", recipient=node_id, quantity=1)
-
-    block = blockchain.new_block(image_file, blockchain.transactions, proof)
+    blockchain.add_transaction_fields(sender="God", recipient=node_key, quantity=1)
+    block = blockchain.new_block(image_file, label, blockchain.transactions, proof)
     blockchain.add_block(block)
+
+    blockchain.transactions = []
 
 def consensus():
 
