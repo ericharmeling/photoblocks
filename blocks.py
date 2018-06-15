@@ -2,20 +2,21 @@ import hashlib
 import datetime
 import geocoder
 import json
-from images import image_match
+from images import unique_image
 
 class Block:
     """
     The Block class contains transactional data.
     """
-    def __init__(self, index, timestamp, location, data, image, last_hash, nonce=0):
+    def __init__(self, index, timestamp, location, data, image, label, last_hash, nonce=0):
         """
         Create instance of Block class.
         :param index: The index for the block.
         :param timestamp: The time and date the block was created.
         :param location: The geolocation of the block's creation. This is specified as City, State/Province, Country.
         :param data: The transactional data associated with the block.
-        :param image: The matched image on the block.
+        :param image: The image on the block.
+        :param label: The image label.
         :param last_hash: The hash of the previous block in the chain.
         """
         self.index = index
@@ -23,6 +24,7 @@ class Block:
         self.location = location
         self.data = data
         self.image = image
+        self.label = label
         self.last_hash = last_hash
         self.nonce = nonce
 
@@ -47,7 +49,8 @@ class Chain:
         gen_data = {"name": "The First Block", "sender": "God", "recipient": "Mankind", "quantity": 0}
         gen_location = str(geocoder.ip('me')[0])
         gen_image = []
-        genesis = Block(0, datetime.datetime.now(), gen_location, gen_data, gen_image, "0")
+        gen_label = "The Void"
+        genesis = Block(0, datetime.datetime.now(), gen_location, gen_data, gen_image, gen_label, "0")
         self.chain.append(genesis)
 
     @property
@@ -55,31 +58,37 @@ class Chain:
         return self.chain[-1]
 
     @staticmethod
-    def proof_of_work(block, label):
+    def proof_of_work(block):
         """
-        Tries different nonce values until the hash meets the PoW requirements. This hash is only used in the PoW.
-        Image match is also required to solve PoW.
+        Tries different nonce values until the hash meets the PoW requirements.
+        If a unique image is provided, the PoW difficulty decreases.
         :param block: Candidate block.
-        :param image: Candidate image.
-        :param label: Image to match with photo.
         :return: Returns the matching nonce value.
         """
 
         new_block = block
 
-        if image_match(new_block.image, label):
+        if unique_image(new_block.image):
             new_hash = new_block.hash_block()
 
             while new_hash.startswith('0') is False:
                 new_block.nonce += 1
 
             return new_block.nonce
+        else:
+            new_hash = new_block.hash_block()
 
-    def new_block(self, image, data="0", nonce="0"):
+            while new_hash.startswith('0'*3) is False:
+                new_block.nonce += 1
+
+            return new_block.nonce
+
+    def new_block(self, image, label, data="0", nonce="0"):
         """
         Creates a new block with image, proof, and transaction data.
         :param proof: The hash of the proven block.
         :param image: The image of the proven block.
+        :param label: The label of the image.
         :param nonce: The nonce selected for the proven block.
         :param data: The transactions of the proven block.
         :return: Returns the block.
@@ -88,7 +97,7 @@ class Chain:
         timestamp = datetime.datetime.now()
         location = str(geocoder.ip('me')[0])
         last_hash = self.last_block.hash_block()
-        block = Block(index, timestamp, location, data, image, last_hash, nonce)
+        block = Block(index, timestamp, location, data, image, label, last_hash, nonce)
         return block
 
     def add_block(self, block):
