@@ -6,6 +6,14 @@ app = Flask(__name__)
 def index():
     return render_template('home.html')
 
+@app.route('/trade')
+def trade_page():
+    return render_template('trade.html')
+
+@app.route('/mine')
+def mine_page():
+    return render_template('mine.html')
+
 @app.route('/about')
 def about():
     return render_template('about.html')
