@@ -55,26 +55,25 @@ class Chain:
         return self.chain[-1]
 
     @staticmethod
-    def proof_of_work(last_block, image, target_image):
+    def proof_of_work(block, label):
         """
         Tries different nonce values until the hash meets the PoW requirements. This hash is only used in the PoW.
         Image match is also required to solve PoW.
-        :param last_block: Last block.
+        :param block: Candidate block.
         :param image: Candidate image.
-        :param target_image: Image to match with photo.
+        :param label: Image to match with photo.
         :return: Returns the matching nonce value.
         """
-        quick_block = last_block
-        quick_block.nonce = 0
 
-        if image_match(image, target_image):
-            quick_block.image = image
-            quick_hash = quick_block.hash_block()
+        new_block = block
 
-            while quick_hash.startswith('0') is False:
-                quick_block.nonce += 1
+        if image_match(new_block.image, label):
+            new_hash = new_block.hash_block()
 
-            return quick_block.nonce
+            while new_hash.startswith('0') is False:
+                new_block.nonce += 1
+
+            return new_block.nonce
 
     def new_block(self, image, data="0", nonce="0"):
         """
@@ -127,7 +126,7 @@ class Chain:
 
     def is_valid_chain(self, chain):
         """
-        Checks if chain is valid. Might not be needed.
+        Checks if chain is valid.
         :param chain: Chain to check
         :return: Returns True if chain is valid.
         """
