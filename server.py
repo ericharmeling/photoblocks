@@ -58,8 +58,8 @@ def mine():
     image_file = request.file['file']
     image_file.save(temp_store)
 
-    last_block = blockchain.last_block
-    proof = blockchain.proof_of_work(last_block, image_file, global_target)
+    new_block = blockchain.new_block(image_file, blockchain.transactions)
+    proof = blockchain.proof_of_work(new_block, global_target)
 
     blockchain.add_transaction_fields(sender="God", recipient=node_id, quantity=1)
 
