@@ -10,15 +10,20 @@
 PhotoBlocks is a blockchain built on an image labeling mining system. You can earn coins by mining blocks, and you can 
 trade coins with others.
 
-To learn more about PhotoBlocks, and to mine and trade on the PhotoBlocks platform, access the PhotoBlocks web nterface.
+To learn more about PhotoBlocks, and to mine and trade on the PhotoBlocks platform, access the PhotoBlocks web interface.
 
 ## Mining
 Full nodes create new blocks by solving a Proof-of-Work (PoW) algorithm. To solve the PhotoBlocks PoW, the node finds 
 the nonce value that matches the new block's hashed data to a pattern.
 
-The algorithm difficulty decreases if you provide:
-* A label for an image that the server provides
-* A unique image and that image's corresponding label
+To start the PoW, the miner must provide the following:
+* A candidate image to be placed in the candidate block.
+* A label for the candidate image.
+* A label for the image on the last block in the chain.
+
+Each candidate image is sent through a basic image-recognition neural network provided by
+ [TensorFlow](https://www.tensorflow.org/tutorials/image_recognition). Once a block has been created, the label is 
+ validated by miners during the next mining period.
 
 ## Trading
 To trade PhotoBlock coins:
