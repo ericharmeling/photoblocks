@@ -1,25 +1,27 @@
 from blocks import Chain
 from flask import Flask, request
 from flask_cors import CORS
-import datetime
+from uuid import uuid4
 import requests
 import json
 
 app = Flask(__name__)
 CORS(app)
 
-node_id = 0 # unique node ID
-node_key = 0 # node public key (for mining rewards)
+node_id = str(uuid4()).replace('-', '')  # unique node ID
+node_key = 0  # node public key (for mining rewards)
 
 blockchain = Chain()
 
-temp_store = 'path' # temporary image store location
+temp_store = 'path'  # temporary image store location
 
-peers = set()
+nodes = set()
+
 
 @app.route('/nodes/register', methods=['POST'])
 def register_node():
     pass
+
 
 @app.route('/transaction', methods=['POST'])
 def new_transaction():
@@ -27,16 +29,17 @@ def new_transaction():
     Posts new transaction to chain.
     :return:
     """
-    data = request.get_json()
-    fields = ["sender", "recipient", "quantity"]
+    sender = request.form["sender"]
+    recipient = request.form["recipient"]
+    quantity = request.form["quantity"]
+
+    fields = [sender, recipient, quantity]
 
     for field in fields:
-        if not data.get(field):
+        if not field:
             return "Invalid Data", 404
 
-    data["timestamp"] = datetime.datetime.now()
-
-    blockchain.add_transaction_data(data)
+    blockchain.add_transaction_fields(sender, recipient, quantity)
 
     return "OK", 201
 
@@ -52,6 +55,7 @@ def get_chain():
         data.append(block.__dict__)
     return json.dumps({"length": len(data), "chain": data})
 
+
 @app.route('/mine', methods=['POST', 'GET'])
 def mine():
     if request.method == 'POST':
@@ -64,20 +68,20 @@ def mine():
     new_block = blockchain.new_block(image_file, label, blockchain.transactions)
     proof = blockchain.proof_of_work(new_block)
 
-    blockchain.add_transaction_fields(sender="God", recipient=node_key, quantity=1)
     block = blockchain.new_block(image_file, label, blockchain.transactions, proof)
     blockchain.add_block(block)
 
     blockchain.transactions = []
+    blockchain.add_transaction_fields(sender="God", recipient=node_key, quantity=1)
+
 
 def consensus():
-
     global blockchain
 
     longest_chain = None
     n = len(blockchain.chain)
 
-    for node in peers:
+    for node in nodes:
         response = requests.get('http://{}/chain'.format(node))
         length = response.json()['length']
         chain = response.json()['chain']
