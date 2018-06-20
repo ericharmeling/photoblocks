@@ -2,12 +2,14 @@ import hashlib
 import datetime
 import geocoder
 import json
-from images import unique_image
+from images import image_match
+
 
 class Block:
     """
     The Block class contains transactional data.
     """
+
     def __init__(self, index, timestamp, location, data, image, label, last_hash, nonce=0):
         """
         Create instance of Block class.
@@ -36,10 +38,12 @@ class Block:
         block = json.dumps(self.__dict__, sort_keys=True)
         return hashlib.sha3_256(block.encode()).hexdigest()
 
+
 class Chain:
     """
     The Chain class implements the blockchain: a list of linked blocks.
     """
+
     def __init__(self):
         """
         Create instance of Chain class.
@@ -68,7 +72,7 @@ class Chain:
 
         new_block = block
 
-        if unique_image(new_block.image):
+        if image_match(new_block.image, new_block.label):
             new_hash = new_block.hash_block()
 
             while new_hash.startswith('0') is False:
@@ -78,7 +82,7 @@ class Chain:
         else:
             new_hash = new_block.hash_block()
 
-            while new_hash.startswith('0'*3) is False:
+            while new_hash.startswith('0' * 4) is False:
                 new_block.nonce += 1
 
             return new_block.nonce
@@ -121,7 +125,8 @@ class Chain:
         :param quantity: Specifies the quantity.
         :return:
         """
-        data = {"sender": sender, "recipient": recipient, "quantity": quantity}
+        timestamp = datetime.datetime.now()
+        data = {"sender": sender, "recipient": recipient, "quantity": quantity, "timestamp": timestamp}
         self.transactions.append(data)
 
     def add_transaction_data(self, data):
@@ -131,6 +136,7 @@ class Chain:
         :param data: Specifies the data (JSON).
         :return:
         """
+        data['timestamp'] = datetime.datetime.now()
         self.transactions.append(data)
 
     def is_valid_chain(self, chain):
