@@ -1,11 +1,15 @@
 import subprocess
 
-def unique_image(file):
+
+def image_match(file, target):
     """
     Checks if image is unique
     :param file: Input image file
-    :param label: Target image category
+    :param target: Target image category
     :return: True if image from file matches image category, False if not.
     """
-    is_unique = subprocess.run(["unique.py", "--image-file" + file])
-    return is_unique
+    label = str(subprocess.run(["classify_image.py ", "--image-file " + file]))
+    if target in label:
+        return True
+
+    return False
