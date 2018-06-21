@@ -3,25 +3,18 @@
 {% block body %}
 <h1>Trade coins</h1>
 <hr>
-<form>
+<form action="{{ url_for('transaction') }}" method="post">
   <div class="form-group">
     <label for="sender">Sender Private Key</label>
-    <input class="form-control" id="sender" aria-describedby="senderHelp" placeholder="Enter the sender's private
-     key.">
-    <small id="senderHelp" class="form-text text-muted">Never share this key with anyone. We won't.</small>
+    <input class="form-control" id="sender" aria-describedby="senderHelp" placeholder="Enter key">
   </div>
   <div class="form-group">
     <label for="recipient">Recipient Public Key</label>
-    <input class="form-control" id="recipient" aria-describedby="recipientHelp" placeholder="Enter the recipient's
-    public key.">
-    <small id="recipientHelp" class="form-text text-muted">Make sure you have the right public key.</small>
+    <input class="form-control" id="recipient" aria-describedby="recipientHelp" placeholder="Enter key">
   </div>
   <div class="form-group">
     <label for="quantity">Quantity</label>
-    <input class="form-control" id="quantity" aria-describedby="quantityHelp" placeholder="Enter the exact quantity
-    that you would like to trade.">
-    <small id="quantityHelp" class="form-text text-muted">Double check your trade quantity. This trade is final!
-    </small>
+    <input class="form-control" id="quantity" aria-describedby="quantityHelp" placeholder="Enter quantity">
   </div>
   <button class="btn btn-primary">Submit</button>
 </form>
