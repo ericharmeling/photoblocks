@@ -3,4 +3,19 @@
 {% block body %}
 <h1>Mine blocks</h1>
 <hr>
+<form action="{{ url_for('mine') }}" method="post">
+  <div class="form-group">
+    <label for="image">Image</label>
+    <input class="form-control" id="image" aria-describedby="imageHelp" placeholder="Enter path to the image file">
+  </div>
+  <div class="form-group">
+    <label for="label">Image Label</label>
+    <input class="form-control" id="label" aria-describedby="labelHelp" placeholder="Enter a label">
+  </div>
+  <div class="form-group">
+    <label for="last_label">Last Block's Image Label</label>
+    <input class="form-control" id="last_label" aria-describedby="lastHelp" placeholder="Enter a label">
+  </div>
+  <button class="btn btn-primary">Submit</button>
+</form>
 {% endblock %}
