@@ -3,18 +3,18 @@
 {% block body %}
 <h1>Trade coins</h1>
 <hr>
-<form action="{{ url_for('transaction') }}" method="post">
+<form action="/transaction" method="POST">
   <div class="form-group">
     <label for="sender">Sender Private Key</label>
-    <input class="form-control" id="sender" aria-describedby="senderHelp" placeholder="Enter key">
+    <input class="form-control" type="text" name="sender" id="sender" placeholder="Enter key">
   </div>
   <div class="form-group">
     <label for="recipient">Recipient Public Key</label>
-    <input class="form-control" id="recipient" aria-describedby="recipientHelp" placeholder="Enter key">
+    <input class="form-control" type="text" name="recipient" id="recipient" placeholder="Enter key">
   </div>
   <div class="form-group">
     <label for="quantity">Quantity</label>
-    <input class="form-control" id="quantity" aria-describedby="quantityHelp" placeholder="Enter quantity">
+    <input class="form-control" type="text" name="quantity" id="quantity" placeholder="Enter quantity">
   </div>
   <button class="btn btn-primary">Submit</button>
 </form>
