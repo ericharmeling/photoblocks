@@ -28,6 +28,7 @@ class Block:
         self.image = image
         self.label = label
         self.last_hash = last_hash
+        self.last_label = list()
         self.nonce = nonce
 
     def hash_block(self):
@@ -87,10 +88,9 @@ class Chain:
 
             return new_block.nonce
 
-    def new_block(self, image, label, data="0", nonce="0"):
+    def new_block(self, image, label, data="0", nonce=0):
         """
         Creates a new block with image, proof, and transaction data.
-        :param proof: The hash of the proven block.
         :param image: The image of the proven block.
         :param label: The label of the image.
         :param nonce: The nonce selected for the proven block.

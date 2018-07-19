@@ -21,7 +21,7 @@ nodes.append({'node_name': head_node_name, 'node_id': head_node_id, 'node_type':
 temp_store = '/temp/'  # temporary image store location
 
 
-# WEB PAGES
+# PAGES
 
 @app.route('/')
 def index():
@@ -54,7 +54,7 @@ def contact():
     return render_template('contact.html')
 
 
-# WEB REQUESTS
+# REQUESTS
 
 # Nodes
 
