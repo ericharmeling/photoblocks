@@ -28,7 +28,6 @@ class Block:
         self.image = image
         self.label = label
         self.last_hash = last_hash
-        self.last_label = list()
         self.nonce = nonce
 
     def hash_block(self):
@@ -50,6 +49,7 @@ class Chain:
         Create instance of Chain class.
         """
         self.transactions = []
+        self.last_labels = []
         self.chain = []
         gen_data = {"name": "The First Block", "sender": "God", "recipient": "Mankind", "quantity": 0}
         gen_location = str(geocoder.ip('me')[0])
