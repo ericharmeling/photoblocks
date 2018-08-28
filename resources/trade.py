@@ -1,13 +1,12 @@
 from flask.views import MethodView
 from flask import request
-# import json
+
 
 class TransactionNewResource(MethodView):
     def post(self):
         sender = request.form["sender"]
         recipient = request.form["recipient"]
         quantity = request.form["quantity"]
-
         fields = [sender, recipient, quantity]
 
         for field in fields:
@@ -17,6 +16,7 @@ class TransactionNewResource(MethodView):
         blockchain.add_transaction_fields(sender, recipient, quantity)
 
         return fields, 200
+
 
 class TransactionListResource(MethodView):
     def get(self):
