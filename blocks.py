@@ -1,3 +1,6 @@
+# blocks.py
+# Defines Block class, a data structure for transactional data
+
 import hashlib
 import datetime
 import geocoder
