@@ -1,13 +1,12 @@
 from blocks import Chain
 from flask import Flask, request, render_template
-from flask.views import MethodView
 from resources.nodes import *
 from resources.trade import *
 from resources.mine import *
 from resources.chain import *
+from resources.users import *
 from uuid import uuid4
 import requests
-import json
 
 # Assign variable to Flask WSGI instance
 app = Flask(__name__)
@@ -26,6 +25,9 @@ blockchain = Chain()
 nodes = list()
 nodes.append({'node_name': head_node_name, 'node_id': head_node_id, 'node_type': head_node_type,
               'node_key': head_node_key})
+
+# Initialize users
+users = list()
 
 # Assign temporary store directory
 temp_store = '/temp/'
@@ -48,6 +50,17 @@ def mine_page():
     return render_template('mine.html')
 
 
+@app.route('/register')
+def register_page():
+    global nodes
+    return render_template('register.html')
+
+
+@app.route('/login')
+def login_page():
+    return render_template('login.html')
+
+
 @app.route('/nodes')
 def nodes_page():
     global nodes
@@ -65,6 +78,12 @@ def contact():
 
 
 # Add routes to resources
+
+# Users
+
+app.add_url_rule('/users/register', view_func=UserRegisterResource.as_view('user_register_resource'), methods=['POST'])
+app.add_url_rule('/users/login', view_func=UserLoginResource.as_view('user_login_resource'), methods=['POST'])
+
 
 # Nodes
 
@@ -88,6 +107,7 @@ app.add_url_rule('/mine', view_func=MineResource.as_view('mine_resource'), metho
 app.add_url_rule('/chain', view_func=ChainResource.as_view('chain_resource'), methods=['GET'])
 
 
+# big to-do here...
 def consensus():
     global blockchain
 
