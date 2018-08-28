@@ -2,6 +2,7 @@
 
 ## Contents
 * [Overview](#overview)
+* [Prerequisites](#prerequisites)
 * [Registration](#registration)
 * [Mining](#mining)
 * [Trading](#trading)
@@ -11,16 +12,59 @@
 PhotoBlocks is a blockchain platform built on an image labeling mining system. You can earn coins by mining blocks, and you can 
 trade coins with others.
 
-To learn more about PhotoBlocks, and to mine and trade on the PhotoBlocks platform, access the PhotoBlocks web interface.
 
-To start a new PhotoBlocks server, run `python server.py` from the command line.
+## Server Prerequisites
+To run the PhotoBlocks server, you'll need the following third-party libraries:
+* `flask`
+* `geocoder`
+* TensorFlow's [`classify_image`](https://www.tensorflow.org/tutorials/image_recognition) module
+
+I recommend that you start the server from a virtual environment. With Python 3.4+, run the following from the terminal:
+```shell
+$ cd my-directory
+$ python -m venv pbenv
+$ source pbenv/bin/activate
+(pbenv)
+```
+
+If you're using a bash shell (e.g. Git bash) on Windows, source the virtual environment from the Scripts directory:
+```shell
+$ source pbenv/Scripts/activate
+(pbenv)
+```
+
+You can `pip install` the third party libraries to the virtual environment.
+
+To start a new PhotoBlocks server, run the following:
+```shell
+python server.py
+```
+
+The terminal should return the following:
+```shell
+* Serving Flask app "server" (lazy loading)
+ * Environment: production
+   WARNING: Do not use the development server in a production environment.
+   Use a production WSGI server instead.
+ * Debug mode: on
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: some-pin-number
+ * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+```
+
+You can then navigate to http://127.0.0.1:5000/ in any web browser and interact with the front-end of the PhotoBlocks server.
 
 ## Registration
-To mine blocks and trade coins on PhotoBlocks, you need to be a registered user. To register as a user, navigate to the "Users" page 
-of the PhotoBlocks web interface. After you fill out some forms, you'll be given a public and private key. Your name and public key are 
+There are two types of accounts in PhotoBlocks: *Trader* and *Miner*.
+Traders can only trade, and miners can trade and mine.
+
+### *Trader*
+To register as a trader, navigate to the "Users" page of the PhotoBlocks web interface. After you fill out some forms, you'll be given a public and private key. Your name and public key are
 visible to the public. Keep the private key private.
 
-To mine blocks, you also need to register your node. To register a node, navigate to the "Nodes" page, and fill out the forms.
+### *Miner*
+To mine blocks, you need to register your node. To register a node, navigate to the "Nodes" page, and fill out the forms.
 
 ## Mining
 To start mining blocks on a node, navigate to the "Mine" page of the PhotoBlocks web interface. You'll be asked to provide the 
@@ -31,8 +75,7 @@ following:
 * A label for the candidate image
 * A label for the image on the last block in the chain
 
-Each candidate image is sent through a basic image-recognition neural network provided by
-[TensorFlow](https://www.tensorflow.org/tutorials/image_recognition). If the label that you provide matches a string in output of the 
+Each candidate image is sent through a basic TensorFlow image-recognition neural network. If the label that you provide matches a string in output of the
 scored image, your node will start to solve the PoW algorithm. 
 
 Nodes create new blocks by solving a Proof-of-Work (PoW) algorithm. To solve the PhotoBlocks PoW, the node finds 
