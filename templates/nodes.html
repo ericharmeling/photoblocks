@@ -3,14 +3,14 @@
 {% block body %}
 <h1>Nodes</h1>
 <hr>
-<h2>Node List</h2>
+<h3>Node List</h3>
 <ul class="list-group">
     {% for node in peers %}
     <li>{{ node }}</li>
     {% endfor %}
 </ul>
-
 <hr>
+<h3>Register a node</h3>
 <form action="/nodes/register" method="POST">
   <div class="form-group">
     <label for="node_name">Node name</label>
