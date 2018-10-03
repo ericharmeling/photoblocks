@@ -1,4 +1,4 @@
-from blocks import Chain
+from chain import Chain
 from flask import Flask, request, render_template
 from resources.nodes import *
 from resources.trade import *
@@ -7,16 +7,20 @@ from resources.chain import *
 from resources.users import *
 from uuid import uuid4
 import requests
+import json
+
+# Pull in configuration file
+with open("config.json") as f:
+    config_json = json.load(f)
 
 # Assign variable to Flask WSGI instance
 app = Flask(__name__)
 
-
-# Define head node initialization variables
-head_node_name = "Head Node"
-head_node_id = str(uuid4()).replace('-', '')
+# Define node initialization variables
+node_name = config_json.nodename()
+head_node_id = config_json.key()
 head_node_type = "HEAD"
-head_node_key = 0
+head_node_key = config_json.key()
 
 # Initialize blockchain
 blockchain = Chain()
