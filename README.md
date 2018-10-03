@@ -17,6 +17,7 @@ trade coins with others.
 To run the PhotoBlocks server, you'll need the following third-party libraries:
 * `flask`
 * `geocoder`
+* `tensorflow`
 * TensorFlow's [`classify_image`](https://www.tensorflow.org/tutorials/image_recognition) module
 
 I recommend that you start the server from a virtual environment. With Python 3.4+, run the following from the terminal:
@@ -33,7 +34,9 @@ $ source pbenv/Scripts/activate
 (pbenv)
 ```
 
-You can `pip install` the third party libraries to the virtual environment.
+You can `pip install` the `flask`, `geocoder`, and `tensorflow` libraries to the virtual environment.
+
+The `classify_image` module is not available on PyPi. You need to clone the `models` repository to disk. You can find the module at `models/tutorials/image/imagenet/classify_image.py`.
 
 To start a new PhotoBlocks server, run the following:
 ```shell
@@ -96,4 +99,4 @@ I found the following resources inspirational and extremely helpful. Thank you, 
 
 * [A Practical Introduction to Blockchain with Python](http://adilmoujahid.com/posts/2018)
 * [Learn Blockchains by Building One](https://hackernoon.com/learn-blockchains-by-building-one-117428612f46)
-* [Develop a blockchain application from scratch in Python](https://www.ibm.com/developerworks/cloud/library/cl-develop-blockchain-app-in-python/index.html)
+* [ibm_blockchain](https://github.com/satwikkansal/ibm_blockchain)
