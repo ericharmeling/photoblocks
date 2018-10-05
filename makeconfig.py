@@ -8,9 +8,11 @@ import json
 class Config:
     def __init__(self):
         self._key = str(uuid4()).replace('-', '')
+        self._nodeid = str(uuid4()).replace('-', '')
         self._debug = True
         self._host = "localhost"
         self._nodename = "mynode"
+        self._nodetype = "full"
 
     def as_json(self):
         return json.dumps(self.__dict__)
@@ -20,8 +22,17 @@ class Config:
         return self._key
 
     @key.setter
-    def key(self, value):
-        self._key = value
+    def key(self):
+        self._key = str(uuid4()).replace('-', '')
+
+    @property
+    def nodeid(self):
+        return self._nodeid
+
+    @nodeid.setter
+    def nodeid(self, value):
+        self._nodeid = value
+
 
     @property
     def debug(self):
@@ -49,6 +60,14 @@ class Config:
     @nodename.setter
     def nodename(self, value):
         self._nodename = value
+
+    @property
+    def nodetype(self):
+        return self._nodetype
+
+    @nodetype.setter
+    def nodetype(self, value):
+        self._nodetype = value
 
 
 if __name__ == "__main__":

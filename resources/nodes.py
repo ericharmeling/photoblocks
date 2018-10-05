@@ -14,10 +14,10 @@ class NodeRegisterResource(MethodView):
             if not field:
                 return "Invalid Data", 404
 
-        nodes.append({node_name, node_id, node_type, node_key})
-        return nodes, 200
+        # blockchain.nodes.append({node_name, node_id, node_type, node_key})
+        return fields, 200
 
 
 class NodeListResource(MethodView):
     def get(self):
-        return nodes, 200
+        return blockchain.nodes, 200

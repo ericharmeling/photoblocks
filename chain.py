@@ -17,6 +17,7 @@ class Chain:
         """
         self.transactions = []
         self.last_labels = []
+        self.nodes = set()
         self.chain = []
         gen_data = {"name": "The First Block", "sender": "God", "recipient": "Mankind", "quantity": 0}
         gen_location = str(geocoder.ip('me')[0])
