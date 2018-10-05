@@ -112,3 +112,6 @@ venv.bak/
 
 # models folder
 **/models/
+
+# config
+config*
