@@ -9,7 +9,8 @@ def image_match(directory, file, target):
     :param target: Target image category
     :return: True if image from file matches image category, False if not.
     """
-    label = str(subprocess.call(["python", directory + "classify_image.py ", "--image_file", file]))
+    dir = directory + "/models/tutorials/image/imagenet/"
+    label = str(subprocess.call(["python", dir + "classify_image.py ", "--image_file", file]))
     if target in label:
         return True
 

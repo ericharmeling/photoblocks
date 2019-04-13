@@ -11,14 +11,15 @@ class Chain:
     """
     The Chain class implements the blockchain: a list of linked blocks.
     """
-    def __init__(self):
+    def __init__(self, directory="."):
         """
         Create instance of Chain class.
         """
         self.transactions = []
         self.last_labels = []
-        self.nodes = set()
+        self.nodes = []
         self.chain = []
+        self.local_dir = directory
         gen_data = {"name": "The First Block", "sender": "God", "recipient": "Mankind", "quantity": 0}
         gen_location = str(geocoder.ip('me')[0])
         gen_image = []
@@ -30,8 +31,8 @@ class Chain:
     def last_block(self):
         return self.chain[-1]
 
-    @staticmethod
-    def proof_of_work(block):
+    # @staticmethod
+    def proof_of_work(self, block):
         """
         Tries different nonce values until the hash meets the PoW requirements.
         If a unique image is provided, the PoW difficulty decreases.
@@ -40,8 +41,9 @@ class Chain:
         """
 
         new_block = block
+        image_dir = self.local_dir
 
-        if image_match(directory, new_block.image, new_block.label):
+        if image_match(image_dir, new_block.image, new_block.label):
             new_hash = new_block.hash_block()
 
             while new_hash.startswith('0') is False:
@@ -81,8 +83,10 @@ class Chain:
         self.chain.append(block)
 
     @staticmethod
-    def is_valid_hash(block, block_hash):
-        return block_hash.startswith('0') and block_hash == block.hash_block()
+    def is_valid_hash(block):
+        block_hash = block.hash_block()
+        if block_hash.startswith('0') or block_hash.startswith('0'*4):
+            return True
 
     def add_transaction_fields(self, sender, recipient, quantity):
         """
@@ -109,19 +113,17 @@ class Chain:
 
     def is_valid_chain(self, chain):
         """
-        Checks if chain is valid.
+        Iterates through each block on the chain, hashing the block and its previous block to ensure that the chain is
+        valid.
         :param chain: Chain to check
         :return: Returns True if chain is valid.
         """
-        result = True
-        last_hash = "0"
 
         for block in chain:
-            block_hash = block.proof
-            delattr(block, "proof")
-
-            if not self.is_valid_hash(block, block.proof) or last_hash != block.last_hash:
+            if not self.is_valid_hash(block) or block.last_hash != chain.last_block.hash_block():
                 result = False
-                break
+
+            else:
+                result = True
 
         return result

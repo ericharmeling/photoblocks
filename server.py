@@ -3,7 +3,7 @@ from flask import Flask, render_template
 from resources.nodes import *
 from resources.trade import *
 from resources.mine import *
-from resources.chain import *
+# from resources.chain import *
 from resources.users import *
 import json
 
@@ -15,13 +15,16 @@ with open("config.json") as f:
 app = Flask(__name__)
 
 # Define node initialization variables
-node_name = config_json.nodename()
-node_id = config_json.id()
-node_type = config_json.nodetype
-node_key = config_json.key()
+node_name = config_json["_nodename"]
+node_id = config_json["_nodeid"]
+node_type = config_json["_nodetype"]
+node_key = config_json["_key"]
+
+# Define local image matcher config variables
+image_dir = config_json["_imagedir"]
 
 # Initialize blockchain
-blockchain = Chain()
+blockchain = Chain(image_dir)
 
 # initialize node list, you will add to this list with the consensus algorithm
 blockchain.nodes.append({'node_name': node_name, 'node_id': node_id, 'node_type': node_type,
@@ -46,7 +49,7 @@ def trade_page():
 
 @app.route('/mine')
 def mine_page():
-    return render_template('mine.html')
+    return render_template('mine.html', listchain=blockchain.__dict__)
 
 
 @app.route('/register')
@@ -99,7 +102,7 @@ app.add_url_rule('/mine', view_func=MineResource.as_view('mine_resource'), metho
 
 # Chain
 
-app.add_url_rule('/chain', view_func=ChainResource.as_view('chain_resource'), methods=['GET'])
+# app.add_url_rule('/chain', view_func=ChainResource.as_view('chain_resource'), methods=['GET'])
 
 if __name__ == '__main__':
     app.run(debug=True)
