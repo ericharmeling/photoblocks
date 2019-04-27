@@ -3,7 +3,11 @@
 {% block body %}
 <h1>Mine blocks</h1>
 <hr>
-<form action="/mine" method="POST">
+<form action="/mine" method="POST" enctype="multipart/form-data">
+  <div class="form-group">
+    <label for="node_key">Node Key</label>
+    <input class="form-control" type="text" name="node_key" id="node_key" placeholder="Enter your node's public key">
+  </div>
   <div class="form-group">
     <label for="image">Image File</label>
     <input class="form-control-file" type="file" name="file" id="image">

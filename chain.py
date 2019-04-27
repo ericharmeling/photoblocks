@@ -19,12 +19,12 @@ class Chain:
         self.last_labels = []
         self.nodes = []
         self.chain = []
-        self.local_dir = directory
+        self.dir = directory
         gen_data = {"name": "The First Block", "sender": "God", "recipient": "Mankind", "quantity": 0}
         gen_location = str(geocoder.ip('me')[0])
         gen_image = []
         gen_label = "The Void"
-        genesis = Block(0, datetime.datetime.now(), gen_location, gen_data, gen_image, gen_label, "0")
+        genesis = Block(0, datetime.datetime.now(), gen_location, gen_data, gen_image, gen_label, "0", ".")
         self.chain.append(genesis)
 
     @property
@@ -41,16 +41,19 @@ class Chain:
         """
 
         new_block = block
-        image_dir = self.local_dir
+        image_dir = self.dir
 
+        print(f"Running image processor")
         if image_match(image_dir, new_block.image, new_block.label):
             new_hash = new_block.hash_block()
-
+            print(f"Image matched!\n Starting simplified PoW...")
             while new_hash.startswith('0') is False:
                 new_block.nonce += 1
-
+                new_hash = new_block.hash_block()
+                print(new_hash)
             return new_block.nonce
         else:
+            print(f"No image match found\n Starting PoW...")
             new_hash = new_block.hash_block()
 
             while new_hash.startswith('0' * 4) is False:

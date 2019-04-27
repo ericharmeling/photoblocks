@@ -1,5 +1,5 @@
 from flask.views import MethodView
-from flask import request
+from flask import request, Response
 
 
 class MineResource(MethodView):
@@ -18,4 +18,4 @@ class MineResource(MethodView):
         blockchain.transactions = []
         blockchain.add_transaction_fields(sender="God", recipient=node_key, quantity=1)
 
-        return blockchain, 200
+        return Response(status=200, headers={"block": block})

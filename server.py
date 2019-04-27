@@ -1,8 +1,9 @@
 from chain import Chain
+from mine import mine
 from flask import Flask, render_template
 from resources.nodes import *
 from resources.trade import *
-from resources.mine import *
+# from resources.mine import *
 # from resources.chain import *
 from resources.users import *
 import json
@@ -43,7 +44,7 @@ def scan(u, p):
         print(f'Error: {error}\n')
         return p
     else:
-        nodes.add(response.json())
+        nodes[p] = (response.json())
         p += 1
         scan(u, p+1)
 
@@ -55,9 +56,10 @@ node_pack = {
     "name": node_name,
     "id": node_id,
     "type": node_type,
-    "port": node_port,
-    "peers": nodes
+    "key": node_key
 }
+# Add node variables to node map
+nodes[node_port] = node_pack
 
 # Set debug mode
 DEBUG = config_json["_debug"]
@@ -71,9 +73,8 @@ image_dir = config_json["_imagedir"]
 # Initialize blockchain
 blockchain = Chain(image_dir)
 
-# Initialize node list, you will add to this list with the consensus algorithm
-blockchain.nodes.append({'node_name': node_name, 'node_id': node_id, 'node_type': node_type,
-                         'node_key': node_key})
+# Populate nodes structure with collected node data
+blockchain.nodes = nodes
 
 ##############
 # WEB ROUTES #
@@ -93,9 +94,18 @@ def trade_page():
     return render_template('trade.html')
 
 
-@app.route('/mine')
-def mine_page():
-    return render_template('mine.html', listchain=blockchain.__dict__)
+@app.route('/mine', methods=['GET', 'POST'])
+def mine_route():
+    if request.method == 'POST':
+        try:
+            bc = mine(blockchain)
+            return str(bc)
+        except HTTPError as http_error:
+            print(f'HTTP error: {http_error}\n')
+        except Exception as error:
+            print(f'Error: {error}\n')
+    else:
+        return render_template('mine.html', listchain=blockchain.chain)
 
 
 @app.route('/register')
@@ -144,7 +154,7 @@ app.add_url_rule('/transaction/list', view_func=TransactionListResource.as_view(
 
 # Mining
 
-app.add_url_rule('/mine', view_func=MineResource.as_view('mine_resource'), methods=['POST'])
+# app.add_url_rule('/mine', view_func=MineResource.as_view('mine_resource'), methods=['POST'])
 
 # Chain
 
