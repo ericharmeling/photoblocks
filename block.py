@@ -9,7 +9,6 @@ class Block:
     """
     The Block class contains transactional data.
     """
-
     def __init__(self, index, timestamp, location, data, image, label, last_hash, image_loc, nonce=0):
         """
         Create instance of Block class.

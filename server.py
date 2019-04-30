@@ -1,24 +1,22 @@
 from chain import Chain
-from mine import mine
+from networking import *
 from flask import Flask, render_template
+from resources.mine import mine
 from resources.nodes import *
 from resources.trade import *
-# from resources.mine import *
 # from resources.chain import *
 from resources.users import *
 import json
 import requests
 from requests import HTTPError
 
+# VARIABLES
+# Assign variable to Flask WSGI instance
+app = Flask(__name__)
+
 # Pull in configuration file
 with open("config.json") as f:
     config_json = json.load(f)
-
-#################
-# SET VARIABLES #
-#################
-# Assign variable to Flask WSGI instance
-app = Flask(__name__)
 
 # Define node initialization variables
 node_name = config_json["_nodename"]
@@ -32,24 +30,9 @@ URL = config_json["_url"]
 # Initialize peer node set
 nodes = dict()
 
-
 # Scan network for other nodes and set port
-def scan(u, p):
-    try:
-        response = requests.get(url=u + p)
-    except HTTPError as http_error:
-        print(f'HTTP error: {http_error}\n Using {p} as node port\n')
-        return p
-    except Exception as error:
-        print(f'Error: {error}\n')
-        return p
-    else:
-        nodes[p] = (response.json())
-        p += 1
-        scan(u, p+1)
-
-
-node_port = scan(URL, 5000)
+node_port = scan(URL, 5000, nodes)
+ENDPOINT = URL + node_port
 
 # Set variables for other peers
 node_pack = {
@@ -67,39 +50,42 @@ DEBUG = config_json["_debug"]
 # Define local image matcher config variables
 image_dir = config_json["_imagedir"]
 
-######################
-# BLOCKCHAIN PROCESS #
-######################
+
+# BLOCKCHAIN
 # Initialize blockchain
 blockchain = Chain(image_dir)
 
 # Populate nodes structure with collected node data
 blockchain.nodes = nodes
 
-##############
-# WEB ROUTES #
-##############
-@app.route('/')
+
+# ROUTES
+# Check nodes
+@app.route('/', methods=['GET'])
 def check():
     return json.dumps(node_pack), 200
 
-# Add routes to pages (located in templates)
-@app.route('/home')
+# Home page
+@app.route('/home', methods=['GET'])
 def index():
     return render_template('home.html')
 
-
-@app.route('/trade')
+# Trade page
+@app.route('/trade', methods=['GET'])
 def trade_page():
     return render_template('trade.html')
 
-
+# Mine page and mine submission
 @app.route('/mine', methods=['GET', 'POST'])
 def mine_route():
     if request.method == 'POST':
         try:
-            bc = mine(blockchain)
-            return str(bc)
+            list_response = requests.get(url=ENDPOINT + 'nodes/list')
+            if request.form['node_id'] not in list_response.text:
+                return 'The node ID you gave is not registered!', 200
+            else:
+                bc = mine(blockchain)
+                return render_template('reward.html', block=bc)
         except HTTPError as http_error:
             print(f'HTTP error: {http_error}\n')
         except Exception as error:
@@ -108,53 +94,64 @@ def mine_route():
         return render_template('mine.html', listchain=blockchain.chain)
 
 
+# Nodes page
+@app.route('/nodes', methods=['GET'])
+def nodes_page():
+    return render_template('nodes.html', peers=blockchain.nodes)
+
+
+# Register node
+@app.route('/nodes/register', methods=['POST'])
+def nodes_register():
+    try:
+        add_node(blockchain)
+        return render_template('nodes.html', peers=blockchain.nodes)
+    except HTTPError as http_error:
+        print(f'HTTP error: {http_error}\n')
+    except Exception as error:
+        print(f'Error: {error}\n')
+
+
+# List node (for proof of work)
+@app.route('/nodes/list', methods=['GET'])
+def nodes_list():
+    try:
+        return blockchain.nodes
+    except HTTPError as http_error:
+        print(f'HTTP error: {http_error}\n')
+    except Exception as error:
+        print(f'Error: {error}\n')
+
+
+# Register page
 @app.route('/register')
 def register_page():
     return render_template('register.html')
 
 
+# Login page
 @app.route('/login')
 def login_page():
     return render_template('login.html')
 
 
-@app.route('/nodes')
-def nodes_page():
-    return render_template('nodes.html', peers=blockchain.nodes)
-
-
+# About page
 @app.route('/about')
 def about():
     return render_template('about.html')
 
 
+# Contact page
 @app.route('/contact')
 def contact():
     return render_template('contact.html')
 
 
-#############
-# RESOURCES #
-#############
-# Users
-app.add_url_rule('/users/register', view_func=UserRegisterResource.as_view('user_register_resource'), methods=['POST'])
-app.add_url_rule('/users/login', view_func=UserLoginResource.as_view('user_login_resource'), methods=['POST'])
-
-# Nodes
-
-app.add_url_rule('/nodes/register', view_func=NodeRegisterResource.as_view('node_register_resource'), methods=['POST'])
-app.add_url_rule('/nodes/list', view_func=NodeListResource.as_view('node_list_resource'), methods=['GET'])
-
 # Trading
-
 app.add_url_rule('/transaction/new', view_func=TransactionNewResource.as_view('transaction_new_resource'),
                  methods=['POST'])
 app.add_url_rule('/transaction/list', view_func=TransactionListResource.as_view('transaction_list_resource'),
                  methods=['GET'])
-
-# Mining
-
-# app.add_url_rule('/mine', view_func=MineResource.as_view('mine_resource'), methods=['POST'])
 
 # Chain
 
