@@ -1,21 +1,25 @@
-from flask.views import MethodView
-from flask import request, Response
+from flask import request
 
 
-class MineResource(MethodView):
-    def post(self, blockchain, id):
-        image_file = request.form['file']
-        label = request.form['label']
-        last_label = request.form['last_label']
+def mine(blockchain):
+    # Form data
+    image_file = request.files['file']
+    image_loc = blockchain.dir + image_file.filename
+    label = request.form['label']
+    last_label = request.form['last_label']
+    n_key = request.form['node_id']
 
-        blockchain.last_labels.append(last_label)
+    # Store image file on server
+    image_file.save(image_loc)
 
-        iter_block = blockchain.new_block(image_file, label, blockchain.transactions)
-        proof = blockchain.proof_of_work(iter_block)
-        block = blockchain.new_block(image_file, label, blockchain.transactions, proof)
+    # Go through data
+    blockchain.last_labels.append(last_label)
+    iter_block = blockchain.new_block(image_loc, label, blockchain.transactions)
+    proof = blockchain.proof_of_work(iter_block)
+    block = blockchain.new_block(image_loc, label, blockchain.transactions, nonce=proof)
 
-        blockchain.add_block(block)
-        blockchain.transactions = []
-        blockchain.add_transaction_fields(sender="God", recipient=node_key, quantity=1)
+    blockchain.add_block(block)
+    blockchain.transactions = []
+    blockchain.add_transaction_fields(sender="God", recipient=n_key, quantity=1)
 
-        return Response(status=200, headers={"block": block})
+    return block
