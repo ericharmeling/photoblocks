@@ -1,74 +1,21 @@
-from chain import Chain
-from networking import *
-from flask import Flask, render_template
-from resources.mine import mine
-from resources.nodes import *
-from resources.trade import *
-# from resources.chain import *
-from resources.users import *
+from flask import Flask
+from views.mine import mine
+from views.nodes import *
+from views.trade import *
+from views.chain import *
+from views.users import *
 import json
 import requests
 from requests import HTTPError
 
-# VARIABLES
-# Assign variable to Flask WSGI instance
 app = Flask(__name__)
 
-# Pull in configuration file
-with open("config.json") as f:
-    config_json = json.load(f)
-
-# Define node initialization variables
-node_name = config_json["_nodename"]
-node_id = config_json["_nodeid"]
-node_type = config_json["_nodetype"]
-node_key = config_json["_key"]
-
-# Define network URL
-URL = config_json["_url"]
-
-# Initialize peer node set
-nodes = dict()
-
-# Scan network for other nodes and set port
-node_port = scan(URL, 5000, nodes)
-ENDPOINT = URL + node_port
-
-# Set variables for other peers
-node_pack = {
-    "name": node_name,
-    "id": node_id,
-    "type": node_type,
-    "key": node_key
-}
-# Add node variables to node map
-nodes[node_port] = node_pack
-
-# Set debug mode
-DEBUG = config_json["_debug"]
-
-# Define local image matcher config variables
-image_dir = config_json["_imagedir"]
-
-
-# BLOCKCHAIN
-# Initialize blockchain
-blockchain = Chain(image_dir)
-
-# Populate nodes structure with collected node data
-blockchain.nodes = nodes
-
-
 # ROUTES
-# Check nodes
+# Seed manager
 @app.route('/', methods=['GET'])
 def check():
     return json.dumps(node_pack), 200
 
-# Home page
-@app.route('/home', methods=['GET'])
-def index():
-    return render_template('home.html')
 
 # Trade page
 @app.route('/trade', methods=['GET'])
@@ -159,4 +106,4 @@ app.add_url_rule('/transaction/list', view_func=TransactionListResource.as_view(
 
 
 if __name__ == '__main__':
-    app.run(host=URL, port=node_port, debug=DEBUG)
+    app.run(host=network, port=node_port, debug=DEBUG)

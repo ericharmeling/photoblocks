@@ -90,6 +90,8 @@ ENV/
 env.bak/
 venv.bak/
 **/pbenv
+Pipfile
+Pipfile.lock
 
 # Spyder project settings
 .spyderproject
@@ -110,8 +112,10 @@ venv.bak/
 # test folder
 **/test/
 
-# models folder
-**/models/
-
 # config
-config*
+config.*
+
+.vscode/
+
+# redis
+*.rdb
