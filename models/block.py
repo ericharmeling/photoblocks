@@ -1,5 +1,5 @@
 # block.py
-# Defines Block class, a data structure for transactional data
+# Defines the Block class, a data structure for transactional data
 
 import hashlib
 import json
@@ -9,16 +9,17 @@ class Block:
     """
     The Block class contains transactional data.
     """
-    def __init__(self, index, timestamp, location, data, image, label, last_hash, image_loc, nonce=0):
+    def __init__(self, index, timestamp, location, data, image, label, last_hash, nonce=0):
         """
-        Create instance of Block class.
+        Creates an instance of the Block class.
         :param index: The index for the block.
         :param timestamp: The time and date the block was created.
-        :param location: The geolocation of the block's creation. This is specified as City, State/Province, Country.
+        :param location: The geolocation of the block's creation.
         :param data: The transactional data associated with the block.
-        :param image: The local location of the image on the block.
+        :param image: The encoded image on the block.
         :param label: The image label.
         :param last_hash: The hash of the previous block in the chain.
+        :param nonce: The nonce of the block.
         """
         self.index = index
         self.timestamp = str(timestamp)
@@ -28,11 +29,10 @@ class Block:
         self.label = label
         self.last_hash = last_hash
         self.nonce = nonce
-        self.image_loc = image_loc
 
     def hash_block(self):
         """
-        Run hash algorithm on block object to create fingerprint.
+        Runs a hash algorithm on block object to create fingerprint.
         :return: Returns the block's hash key.
         """
         block = json.dumps(self.__dict__, sort_keys=True)

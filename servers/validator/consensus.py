@@ -2,14 +2,12 @@
 # Implements longest-chain consensus algorithm
 import requests
 
-
-def consensus(blockchain):
-
+def validate_chain(host, nodes):
     longest_chain = None
-    n = len(blockchain.chain)
+    n = len(chainchain)
 
-    for node in blockchain.nodes:
-        response = requests.get('http://{}/chain'.format(node))
+    for node in nodes:
+        chain = requests.get('{}:{}/chain'.format(node["port"].))
         length = response.json()['length']
         chain = response.json()['chain']
         if length > n and blockchain.is_valid_chain(chain):
