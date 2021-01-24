@@ -8,7 +8,7 @@ from models.block import Block
 
 
 class Chain:
-    def __init__(self): instance of the Chain class, with a genesis block.
+    def __init__(self):
         self.transactions = []
         self.last_labels = []
         self.chain = []
