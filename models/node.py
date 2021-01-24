@@ -10,16 +10,7 @@ import time
 
 
 class Node:
-    """
-    Defines node objects.
-    """
     def __init__(self, config):
-        """
-        Node class constructor.
-
-        Args:
-            config (dict): contains configuration information for node.
-        """
         self.node_id = str(uuid4()).replace('-', '')
         self.node_key = str(uuid4()).replace('-', '')
         self.node_type = config["type"]
@@ -66,12 +57,6 @@ class Node:
 
     @property
     def peerlist(self):
-        """
-        List of node packs.
-
-        Returns:
-            [type]: [description]
-        """
         logging.info('Retrieving node packs from network.')
         sock = ClientSock(self)
         return sock.packs

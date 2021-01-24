@@ -8,13 +8,7 @@ from models.block import Block
 
 
 class Chain:
-    """
-    The Chain class implements the blockchain: a list of blocks.
-    """
-    def __init__(self):
-        """
-        Creates an instance of the Chain class, with a genesis block.
-        """
+    def __init__(self): instance of the Chain class, with a genesis block.
         self.transactions = []
         self.last_labels = []
         self.chain = []
@@ -31,14 +25,6 @@ class Chain:
 
 
     def new_block(self, location, image, label, data=None, nonce=0):
-        """
-        Creates a new block with image, proof, and transaction data.
-        :param image: The image of the proven block.
-        :param label: The label of the image.
-        :param nonce: The nonce selected for the proven block.
-        :param data: The transactions of the proven block.
-        :return: Returns the block.
-        """
         index = len(self.chain) + 1
         timestamp = datetime.datetime.now()
         last_hash = self.last_block.hash_block()
@@ -46,11 +32,6 @@ class Chain:
         return block
 
     def add_block(self, block):
-        """
-        Adds new block to chain.
-        :param block: Block to add to chain
-        :return:
-        """
         self.chain.append(block)
 
     @staticmethod
@@ -60,35 +41,15 @@ class Chain:
             return True
 
     def add_transaction_fields(self, sender, recipient, quantity):
-        """
-        Add a new transaction with field data. The latest transaction data is placed in the data attribute of the latest
-        block.
-        :param sender: Specifies the sender.
-        :param recipient: Specifies the recipient.
-        :param quantity: Specifies the quantity.
-        :return:
-        """
         timestamp = datetime.datetime.now()
         data = {"sender": sender, "recipient": recipient, "quantity": quantity, "timestamp": timestamp}
         self.transactions.append(data)
 
     def add_transaction_data(self, data):
-        """
-        Add a new transaction from JSON data object. The latest transaction data is placed in the data attribute of the
-        latest block.
-        :param data: Specifies the data (JSON).
-        :return:
-        """
         data['timestamp'] = datetime.datetime.now()
         self.transactions.append(data)
 
     def is_valid_chain(self, chain):
-        """
-        Iterates through each block on the chain, hashing the block and its previous block to ensure that the chain is
-        valid.
-        :param chain: Chain to check
-        :return: Returns True if chain is valid.
-        """
 
         for block in chain:
             if not self.is_valid_hash(block) or block.last_hash != chain.last_block.hash_block():
@@ -102,13 +63,6 @@ class Chain:
 """
     @staticmethod
     def proof_of_work(self, block):
-"""        """
-        Tries different nonce values until the hash meets the PoW requirements.
-        If a unique image is provided, the PoW difficulty decreases.
-        :param block: Candidate block.
-        :return: Returns the matching nonce value.
-"""        """
-
         new_block = block
 
         print(f"Running image processor")

@@ -17,12 +17,6 @@ class Image:
         return torch.unsqueeze(self.transformed_image)
 
     def image_match(image, label):
-        """
-        Checks if image is unique
-        :param image: Input image
-        :param label: Input label
-        :return: True if image from file matches image category, False if not.
-        """
         score = str(subprocess.check_output(["python", d + "classify_image.py ", "--image_file", file_loc]))
         print(score)
         if target in score:
