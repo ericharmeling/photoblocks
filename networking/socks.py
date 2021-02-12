@@ -1,15 +1,17 @@
 import socket
 import logging
+import time
 
 class ClientSock:
     def __init__(self, node):
         self.seeds = []
         self.packs = []
         self.chain = []
+        self.node = node
 
-        self.sync()
+        self.sync(node)
 
-    def sync(self):
+    def sync(self, node):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 for port in node.seedports:
                     try:
@@ -28,7 +30,7 @@ class ClientSock:
                             self.setchain(sock, port)
                         else:
                             logging.info(f'Error connecting to seed node on port {port}.')
-                    except Exception as error:
+                    except Exception:
                         logging.info(
                             f'Error retrieving pack information from seed port {port}.')
 
@@ -52,7 +54,7 @@ class ClientSock:
                     f'Packs on node at port {port} not valid. Restarting pack collection.')
                 return self.sync()
 
-    def setchain():
+    def setchain(self, sock, port):
         chain = None
         sock.sendall('chain'.encode())
         response = sock.recv(1024).decode()
@@ -75,14 +77,17 @@ def serversock(node):
         sock.bind((node.host, node.port))
         sock.listen(5)
         while True:
-            peer, address = sock.accept()
-            data = sock.recv(1024).decode()
-            if data:
-                if data != 'chain':
-                    peer.send(node.pack.encode())
+            try:
+                peer, address = sock.accept()
+                data = peer.recv(1024).decode()
+                if data:
+                    if data != 'chain':
+                        peer.send(node.pack.encode())
+                    else:
+                        peer.send(node.blockchain.encode())
                 else:
-                    peer.send(node.blockchain.encode())
-            else:
-                time.sleep(1)
-                logging.info('No client data received yet...')
-                
+                    time.sleep(5)
+                    logging.info('No client data received yet...')
+            except:
+                peer.close()
+                return False

@@ -31,15 +31,16 @@ def main():
 
     # Start node socket server
     logging.info('Starting node socket server on background thread...\n')
-    thread = threading.Thread(target=serversock(node=node))
+    thread = threading.Thread(target=serversock, args=node)
+    logging.info('Thread process created.\n')
     thread.daemon = True 
     thread.start()
-    logging.info('Thread started.\n')
+    logging.info('Thread process started.\n')
 
     # Start and connect to database
     logging.info(f'Starting local database server at {node.dbport}...\n')
     makeconf(node.dbport)
-    run('redis-server db/photoblocks.conf')
+    run("redis-server", input="./db/photoblocks.conf")
     db = redis.Redis(host=node.host, port=node.dbport)
     logging.info(f'Local database server now listening at {node.dbport}.\n')
 
@@ -50,10 +51,6 @@ def main():
     # Create peerlist
     logging.info('Scanning for peer nodes and storing peerlist on database.')
     db.set('nodes', node.peerlist)
-
-    # Start web server   
-    #logging.info('Starting web server.')     
-    #api(node_id=node.node_id, db=db)
 
 
 def parse():
