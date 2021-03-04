@@ -2,85 +2,20 @@
 # Defines the Node class, a data structure that represents a node
 import socket
 from models.chain import Chain
-import logging
 from uuid import uuid4
-from networking.socks import ClientSock
-import threading
 import time
 
 
 class Node:
-    def __init__(self, config):
+    def __init__(self, node_type):
         self.node_id = str(uuid4()).replace('-', '')
         self.node_key = str(uuid4()).replace('-', '')
-        self.node_type = config["type"]
-        self.node_store = config["store"]
-        self.seedports = config["seedports"]
+        self.node_type = node_type
         self.host = socket.gethostbyname("")
-        self.port = None
-        self.dbport = None
-
         if self.node_type == 'head':
+            self.port = 7000
             self.blockchain = Chain()
-            self.port = 6000
         else:
-            self.blockchain = self.getchain(self.seedlist)
-            if self.node_type == 'seed':
-                for port in self.seedports:
-                    if port in self.seedlist:
-                        logging.info(
-                            f'Seed port {port} in use. Looking for other ports.')
-                    else:
-                        logging.info(
-                            f'Seed port {port} is open. Promoting to seed node at port {port}.')
-                        self.port = port
-                if not self.port:
-                    logging.info(
-                        'No seed port is open. Demoting to full node.')
-                    self.setport()
-                    logging.info(
-                        f'Full node now listening at {self.port}.')
-            else:
-                self.setport()
-
-        self.dbport = self.port+1000
-
-        self.pack = {
-            "type": self.node_type,
-            "key": self.node_key,
-            "id": self.node_id,
-            "port": self.port
-        }
-
-
-# Class property functions
-
-    @property
-    def peerlist(self):
-        logging.info('Retrieving node packs from network.')
-        sock = ClientSock(self)
-        return sock.packs
-
-    @property
-    def seedlist(self):
-        logging.info('Retrieving seed node information available on network.')
-        sock = ClientSock(self)
-        return sock.seeds
-
-# Class methods
-
-    def getchain(self, seeds):
-        logging.info("Retrieving validated blockchain.")
-        chain = ClientSock(self)
-        return chain
-
-    def setport(self):
-        if self.port == None:
-            ports = []
-            for peer in self.peerlist:
-                ports.append(peer["peer"])
-            port = ports[-1]+1
-            self.port = port
-        else:
-            logging.info(f'Port already set to {self.port}.')
+            self.port = None
+            self.blockchain = None
 

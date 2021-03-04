@@ -2,6 +2,14 @@
 
 This document provides an architecture specification for the Photoblocks application.
 
+## Start script
+
+The `start.sh` script does the following:
+
+- Starts a dockerized Redis server at the default port (6379).
+- Creates a virtual environment with the Python dependencies.
+- Starts a photoblocks server.
+
 ## Networking
 
 To ensure the integrity of the data stored on a blockchain, the machines that comprise a blockchain's network must share computation and storage responsibilities in a way that limits single points of failure. Sharing computational and storage responsibilities (i.e., participating in the consensus algorithm and storing and validating the blockchain itself) across nodes on a network is not possible in a conventional, centralized network architecture of many requesting clients and few responding servers. In order for a blockchain to exist, a large number of the nodes on the network must act as both client and server (i.e., as peers). Peer-to-peer networking is integral to all blockchain architectures. 
@@ -50,7 +58,6 @@ In the future, it would be nice to also have a Docker container, loaded with all
 
 ### Client sockets
 
-Each node is represented in memory by a Node object (defined in `models/node.py`). The Node class contains some property functions that open up a client socket connection with any existing seed nodes on the network. Client socket connections are opened and closed each time 
 
 ### Server sockets 
 
@@ -60,11 +67,12 @@ Each node is represented in memory by a Node object (defined in `models/node.py`
 
 ## Storage
 
-Each node runs a Redis server locally. Redis makes storing pythonic objects more convenient than SQL databases, at the cost of some amount of row integrity. The integrity of stored data isn't as important in the context of a blockchain, as the data is continually validated.
+Each node runs a [Redis](https://github.com/redis/redis) server locally.
 
 Each node's Redis server stores the following components:
 
 - Node metadata
+- Networking metadata
 - Blockchain data
 
 ### Node metadata storage
@@ -72,13 +80,9 @@ Each node's Redis server stores the following components:
 Each `Node` object has a corresponding *pack* (represented by the `Node.pack` attribute). A pack contains the following information:
 
 - Node type (`Node.node_type`)
-- Node key (`Node.node_key`)
 - Node ID (`Node.node_id`)
+- Node host (`Node.host`)
 - Node port (`Node.port`)
-
-All nodes store the node packs of all other nodes on the network. The packs are stored in Redis with the *node ID* as the key and a string representation of the *node pack* as the value.
-
-In addition to storing all node packs at the very top of the database hierarchy, each node stores a full list of all nodes in the network (i.e., the "peer list").
 
 ### Blockchain data storage
 
@@ -154,3 +158,5 @@ block is mined, valid transactions are moved from the buffer to the block.
 * [A Practical Introduction to Blockchain with Python](http://adilmoujahid.com/posts/2018)
 * [Learn Blockchains by Building One](https://hackernoon.com/learn-blockchains-by-building-one-117428612f46)
 * [ibm_blockchain](https://github.com/satwikkansal/ibm_blockchain)
+* [An Intro to Threading in Python](https://realpython.com/intro-to-python-threading/)
+* [Socket Programming in Python](https://realpython.com/python-sockets/)

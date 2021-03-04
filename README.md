@@ -15,31 +15,21 @@ Photoblocks is an in-development blockchain platform built on an image-labeling 
 
 For a more detailed architecture specification, see [docs/architecture.md](docs/architecture.md).
 
+## Requirements
+
+- Docker
+- Python 3
+
 ## Start a blockchain
 
-To start the head node of a blockchain, do the following:
+To start a node on the blockchain, do the following:
 
-1. Start a database server. 
+```
+$ ./start.sh <type>
+```
 
-    This database will store the blockchain and a list of all nodes on the network. Photoblocks uses [redis](https://github.com/redis/redis). 
-    
-    Get redis, and then configure and start a server to run at port .
+Where `type` specifies the type of node that you want to start. For example, to start the head node of a blockchain (i.e., to start a new blockchain):
 
-
-1. Make a config file with `utils/makeconfig.py`.
-
-1. Start a virtual environment and download the dependencies.
-
-1. Start a photoblocks process.
-
-To start a new Photoblocks blockchain, run the following:
-
-~~~ shell
-python3 main.py --new
-~~~
-
-To join an existing Photoblocks blockchain:
-
-~~~ shell
-python3 main.py --join --url '<gateway address>'
-~~~
+```
+$ ./start.sh head
+```
