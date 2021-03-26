@@ -29,7 +29,8 @@ class ClientSock:
     def setseeds(self, sock):
         for port in self.seedports:
             if self.node.port == port:
-                self.seeds.extend(port)
+                if self.node.port not in self.seedports:
+                    self.seeds.append(port)
                 continue
             else:
                 try:
@@ -51,8 +52,8 @@ class ClientSock:
                     logging.info(f'\n{e}.')
                     continue
         logging.info(
-                f'\n{len(seeds)} seed nodes detected on the network.')
-        if len(seeds) == 1:
+                f'\n{len(self.seeds)} seed nodes detected on the network.')
+        if len(self.seeds) == 1:
             logging.info(
                 f'\nNote that the data on this node has not been validated against other nodes. You should add more seeds!')    
         return
@@ -189,9 +190,9 @@ class ClientSock:
 
 
     def store(self):
-        self.db.set('seeds', str(self.seeds))
-        self.db.set('peers', str(self.peers))
-        self.db.set('chain', str(self.node.blockchain))
+        self.db.set("seeds", str(self.seeds))
+        self.db.set("peers", str(self.peers))
+        self.db.set("chain", str(self.node.blockchain))
         pack = {
             "type": self.node.node_type,
             "id": self.node.node_id,
@@ -207,7 +208,8 @@ class ServerSock:
 
 
     def broadcast(self, db):
-        pack = db.get('pack')
+        pack = db.get("pack")
+        print(pack)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             logging.info('\nNode server socket open for connections.')
             try:
@@ -219,13 +221,13 @@ class ServerSock:
                         data = peer.recv(1024).decode()
                         if data:
                             if data == 'chain':
-                                chain = db.get('chain')
+                                chain = db.get("chain")
                                 peer.send(chain.encode())
                             elif data == 'pack':
-                                pack = db.get('pack')
+                                pack = db.get("pack")
                                 peer.send(pack.encode())
                             elif data == 'peerlist':
-                                peerlist = db.get('peers')
+                                peerlist = db.get("peers")
                                 peer.send(peerlist.encode())
                             elif data == 'ping':
                                 peer.send('hello'.encode())
@@ -239,5 +241,5 @@ class ServerSock:
             except socket.error as e:
                     if e.errno == 98:
                         logging.info(
-                            f'\n{node.port} is already in use. You should reset the node port')
+                            f'\n{self.node.port} is already in use. You should reset the node port')
                     return False

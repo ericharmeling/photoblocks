@@ -11,7 +11,7 @@ class Node:
         self.node_id = str(uuid4()).replace('-', '')
         self.node_key = str(uuid4()).replace('-', '')
         self.node_type = node_type
-        self.host = socket.gethostbyname("")
+        self.host = socket.gethostbyname(socket.gethostname())
         if self.node_type == 'head':
             self.port = 7000
             self.blockchain = Chain()
