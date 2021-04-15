@@ -3,7 +3,7 @@
 
 import datetime
 import geocoder
-from models.block import Block
+from photoblocks.models.block import Block
 #from models.image import Image
 
 

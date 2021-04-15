@@ -29,7 +29,7 @@ def main():
 
     # Construct Node object
     logging.info('\nCreating Node data structure from configuration...')
-    node = Node(node_type=config["type"])
+    node = Node(port=config["port"])
     logging.info(f'\n{node.node_type} node data structure created.')
     
     # Start a node socket client

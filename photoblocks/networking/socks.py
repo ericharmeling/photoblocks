@@ -19,8 +19,6 @@ class ClientSock:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 self.setseeds(sock)
                 self.setpeers(sock)
-                if not self.node.port:
-                    self.setport(sock)
                 self.setchain(sock)
             self.store()
         
