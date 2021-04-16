@@ -1,6 +1,6 @@
 FROM python:3.8-alpine
-WORKDIR /app
+WORKDIR /photoblocks
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
-COPY . .
-CMD ["main.py", "$TYPE"]
+COPY ./photoblocks ./photoblocks
+CMD ["main.py"]

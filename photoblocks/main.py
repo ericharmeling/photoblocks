@@ -1,26 +1,20 @@
 #!/usr/bin/env python3
 import logging
-from utils.configure import makeconfig, parse
 import json
-from models.node import Node
 import redis
-from networking.socks import ClientSock, ServerSock
 import threading
 import time
+from photoblocks.models.node import Node
+from photoblocks.networking.socks import ClientSock, ServerSock
+
 
 def main():
     logging.basicConfig(level=logging.INFO)
     logging.info('\nStarting node server...')
 
-    # Load node server configuration
-    logging.info('\nConfiguring node...')
-    args = parse()
-    if args.file:
-        with open("config.json") as f:
-            config = json.load(f)           
-    else:
-        config = makeconfig(args)
-    logging.info('\nNode configured.')
+    # Unpack network file
+    with open("network.json") as f:
+        network = json.load(f)
 
     # Connect to database
     logging.info(f'\nStarting connection to the local database server...')
@@ -29,12 +23,12 @@ def main():
 
     # Construct Node object
     logging.info('\nCreating Node data structure from configuration...')
-    node = Node(port=config["port"])
-    logging.info(f'\n{node.node_type} node data structure created.')
+    node = Node(next(iternetwork), network[next(iter(network))])
+    logging.info(f'\nNode data structure created.')
     
     # Start a node socket client
     logging.info('\nStarting node socket client on background thread...')
-    thread = threading.Thread(target=ClientSock, args=(node, config["seedports"], db))
+    thread = threading.Thread(target=ClientSock, args=(node, db))
     logging.info('\nThread process created.')
     thread.daemon = True 
     thread.start()

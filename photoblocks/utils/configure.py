@@ -1,3 +1,4 @@
+## DEPRECATED
 # These functions set configuration variables
 import argparse
 from uuid import uuid4

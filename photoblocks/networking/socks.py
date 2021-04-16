@@ -4,9 +4,8 @@ import time
 import threading
 
 class ClientSock:
-    def __init__(self, node, seedports, db):
+    def __init__(self, node, db):
         self.node = node
-        self.seedports = seedports
         self.seeds = []
         self.peers = []
         self.db = db
@@ -25,9 +24,9 @@ class ClientSock:
 
 
     def setseeds(self, sock):
-        for port in self.seedports:
+        for port in [7000,7001]:
             if self.node.port == port:
-                if self.node.port not in self.seedports:
+                if self.node.port not in [7000,7001]:
                     self.seeds.append(port)
                 continue
             else:
