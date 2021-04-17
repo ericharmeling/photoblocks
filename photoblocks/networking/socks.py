@@ -4,172 +4,107 @@ import time
 import threading
 
 class ClientSock:
-    def __init__(self, node, db):
+    def __init__(self, network, node, db):
         self.node = node
-        self.seeds = []
-        self.peers = []
+        self.network = network
         self.db = db
+        self.peers = network["peers"]
+        self.seeds = self.setseeds()
 
         self.sync()
 
 
     def sync(self):
-        while True:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                self.setseeds(sock)
-                self.setpeers(sock)
-                self.setchain(sock)
-            self.store()
+        if len(self.seeds) is 0:
+            logging.info(f'\nNo seeds to validate data. You should add more seeds!')  
+            return
+        else:
+            while True:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    self.updatepeers(sock)
+                    self.updatechain(sock)
+                self.store()
         
 
 
-    def setseeds(self, sock):
-        for port in [7000,7001]:
-            if self.node.port == port:
-                if self.node.port not in [7000,7001]:
-                    self.seeds.append(port)
-                continue
-            else:
-                try:
-                    logging.info(
-                        f'\nLooking for seed node on port {port}...')
-                    sock.connect((self.node.host, port))
-                    sock.sendall('ping'.encode())
-                    response = sock.recv(1024).decode()
-                    if response:
-                        logging.info(
-                        f'\nFound node on port {port}.')
-                        self.seeds.extend(port)
-                    else:
-                        logging.info(f'\nError connecting to node on port {port}.')
-                        raise socket.error
-                except socket.error as e:
-                    logging.info(
-                        f'\nError retrieving peer information from seed port {port}.')
-                    logging.info(f'\n{e}.')
-                    continue
-        logging.info(
-                f'\n{len(self.seeds)} seed nodes detected on the network.')
-        if len(self.seeds) == 1:
-            logging.info(
-                f'\nNote that the data on this node has not been validated against other nodes. You should add more seeds!')    
-        return
+    def setseeds(self):
+        seeds = []
+        ports = [7000, 7001]
+        if self.node.port == 7000:
+            ports = ports[1:]
+        for ip in self.network["peers"]:
+            for port in ports:
+                if self.network["peers"][ip][port] is 1:
+                    logging.info(f'\nReading in scanned seed at {ip}:{port}.')
+                    seeds.extend((ip,port))
+                else:
+                    logging.info(f'\nNo seed found at {ip}:{port}.')
+        if len(seeds) is 0:
+            logging.info(f'\nThe data on this node has not been validated against other nodes. You should add more seeds!')    
+        return seeds
 
 
-    def setpeers(self, sock):
+    def updatepeers(self, sock):
         seed_peerlist = {}
-        if self.peers:
-            seed_peerlist[self.node.port] = self.peers
-        for port in self.seeds:
-            if self.node.port == port:
-                continue
-            else:
-                try:
-                    logging.info(
-                        f'\nConnecting to seed node on port {port}...')
-                    sock.connect((self.node.host, port))
-                    logging.info(
-                        f'\nConnected to seed node on port {port}.')
-                    sock.sendall('peerlist'.encode())
-                    logging.info(
-                        f'\nFetching peer list from seed node on port {port}...')
-                    response = sock.recv(1024).decode()
-                    if response:
-                        seed_peerlist[port] = response
-                    else:
-                        logging.info(f'\nNo response received from node on port {port}.')
-                        raise socket.error
-                except socket.error as e:
-                    logging.info(
-                        f'\nError retrieving pack information from seed port {port}.')
-                    logging.info(f'\n{e}.')
-                    continue
-        if len(seed_peerlist) == 0:
-            logging.info(
-                f'\nNo peers detected. Add some!')
-        elif len(seed_peerlist) == 1:
-            if self.peers:
-                return
-            else:
-                logging.info(
-                f'\nUsing peerlist from node at port {list(seed_peerlist.keys())[0][0]}.')
-                self.peers = list(seed_peerlist.values())[0][0]
-        else:
-            for n in range(len(seed_peerlist)):
-                try:
-                    peerlist = list(seed_peerlist.values())[0][n]
-                    if peerlist == list(seed_peerlist.values())[0][n-1]:
-                        self.peers = peerlist
-                        return
-                    else:
-                        continue
-                except TypeError:
-                    peerlists = list(seed_peerlist.values())
-                    self.peers = peerlists[peerlists.index(max(peerlists))]
-                    return
-
-
-    def setport(self, sock):
-        if self.node.node_type == 'seed':
-            port = self.node.seeds[-1]+1
-        elif self.peers:
-            port = self.peers[-1]+1
-        else:
-            port = self.seedlist[-1]+1
-        while True:
-            try: 
-                logging.info(f'\Checking port {port}...')
-                sock.connect((self.node.host, port))
-                sock.sendall('ping'.encode())
+        for address in self.seeds:
+            ip = address[0]
+            port = address[1]
+            try:
+                logging.info(f'\nConnecting to seed node at {ip}:{port}...')
+                sock.connect((ip, port))
+                logging.info(f'\nConnected to node at {ip}:{port}.')
+                sock.sendall('peerlist'.encode())
+                logging.info(f'\nFetching peer list from node at {ip}:{port}...')
                 response = sock.recv(1024).decode()
                 if response:
-                    logging.info(
-                        f'\nNode already serving at port {port}.')
-                    port = port+1
+                    seed_peerlist[address] = response
                 else:
-                    logging.info(f'\nNo response received from node at port {port}.')
+                    logging.info(f'\nNo response received from node at {ip}:{port}.')
                     raise socket.error
-            except socket.error:
-                logging.info(f'Port {port} free.')
-                self.node.port = port
-                return
-
-
-    def setchain(self, sock):
-        chainlist = {}
-        for port in self.seeds:
-            if self.node.port == port:
-                if self.node.blockchain:
-                    chainlist[port] = self.node.blockchain
+            except socket.error as e:
+                logging.info(f'\nError retrieving pack information from node at {ip}:{port}.')
+                logging.info(f'\n{e}.')
                 continue
-            else:
-                try:
-                    logging.info(
-                        f'\nConnecting to seed node on port {port}...')
-                    sock.connect((self.node.host, port))
-                    logging.info(
-                        f'\nConnected to seed node on port {port}.')
-                    sock.sendall('chain'.encode())
-                    logging.info(
-                        f'\nFetching blockchain from seed node on port {port}...')
-                    response = sock.recv(1024).decode()
-                    if response:
-                        chainlist[port] = response
-                    else:
-                        logging.info(f'\nNo response received from node on port {port}.')
-                        raise socket.error
-                except socket.error as e:
-                    logging.info(
-                        f'\nError retrieving blockchain from seed port {port}.')
-                    logging.info(f'\n{e}.')
-                    continue
-        if len(chainlist) == 1:
-            if not self.node.blockchain:
-                logging.info(f'\nOnly the head node has a blockchain. Using the head node blockchain.')
-                self.node.blockchain = list(chainlist.values())[0][0]
-                return
-            else:
-                return
+        if len(seed_peerlist) == 0:
+            logging.info(f'\nUnable to fetch data from existing seed nodes. Try again!')
+            return
+        else:
+            last_peerlist = None
+            for peerlist in seed_peerlist:
+                if self.peers == peerlist:
+                    logging.info(f'\nLocal peerlist validated against seed node peerlist.')
+                    break
+                elif last_peerlist and peerlist == last_peerlist:
+                    logging.info(f'\nSeed peerlist validated against seed node peerlist.')
+                    self.peers = peerlist
+                    break
+                last_peerlist = peerlist
+
+
+    def updatechain(self, sock):
+        chainlist = {}
+        for address in self.seeds:
+            ip = address[0]
+            port = address[1]
+            try:
+                logging.info(f'\nConnecting to seed node at {ip}:{port}...')
+                sock.connect((self.node.host, port))
+                logging.info(f'\nConnected to node at {ip}:{port}.')
+                sock.sendall('chain'.encode())
+                logging.info(f'\nFetching blockchain from node at {ip}:{port}...')
+                response = sock.recv(1024).decode()
+                if response:
+                    chainlist[address] = response
+                else:
+                    logging.info(f'\nNo response received from node at {ip}:{port}.')
+                    raise socket.error
+            except socket.error as e:
+                logging.info(f'\nError retrieving blockchain from node at {ip}:{port}.')
+                logging.info(f'\n{e}.')
+                continue
+        if len(chainlist) == 0:
+            logging.info(f'\nUnable to fetch data from existing seed nodes. Try again!')
+            return
         else:
             for n in range(len(chainlist)):
                 try:

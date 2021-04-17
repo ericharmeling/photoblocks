@@ -7,11 +7,11 @@ import time
 
 
 class Node:
-    def __init__(self, ip, port):
+    def __init__(self, address):
         self.node_id = str(uuid4()).replace('-', '')
         self.node_key = str(uuid4()).replace('-', '')
-        self.ip = ip
-        self.port = port
+        self.ip = address[0]
+        self.port = address[1]
         if self.port == 7000:
             self.blockchain = Chain()
         else:

@@ -8,8 +8,7 @@ import json
 
 
 def scan(ip, ports, sock):
-    '''
-    Attempts to establish a socket connection from the local machine to a host, at a given list of ports.
+    """Attempts to establish a socket connection from the local machine to a host, at a given list of ports.
     Port values:
     0: availability unknown.
     1: port occupied by a node.
@@ -17,7 +16,7 @@ def scan(ip, ports, sock):
     3: port illegal on current node (e.g., free on the node, but taken by another host).
     4: port free
     5: current process' port
-    '''
+    """
     pdict = {}
     for port in ports:
         try:
@@ -39,6 +38,8 @@ def scan(ip, ports, sock):
 
 
 def parse():
+    """Parses node type passed from start script.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('type', help='The type of the node. Valid options include "head", "seed", and "full"')
     args = parser.parse_args()
@@ -46,7 +47,8 @@ def parse():
 
 
 def main():
-
+    """Main process for network scanner.
+    """
     logging.basicConfig(level=logging.INFO)
     logging.info('\nScanning network for available ports...')
 
@@ -115,9 +117,11 @@ def main():
                             logging.info(f'\nNo node ports are available on local machine! Free up a port between 7002 and 7007, and try again.')
                             return
     nodes[LOCAL_IP][local_port] = 5
+    local_address = (LOCAL_IP, local_port)
+    network = {"local": local_address, "peers": nodes}
 
     with open("./photoblocks/network.json", mode="w") as f:
-        f.write(json.dumps(nodes))
+        f.write(json.dumps(network))
 
     return
 

@@ -13,7 +13,7 @@ def main():
     logging.info('\nStarting node server...')
 
     # Unpack network file
-    with open("network.json") as f:
+    with open(".network.json") as f:
         network = json.load(f)
 
     # Connect to database
@@ -23,12 +23,12 @@ def main():
 
     # Construct Node object
     logging.info('\nCreating Node data structure from configuration...')
-    node = Node(next(iternetwork), network[next(iter(network))])
+    node = Node(network["local"])
     logging.info(f'\nNode data structure created.')
     
     # Start a node socket client
     logging.info('\nStarting node socket client on background thread...')
-    thread = threading.Thread(target=ClientSock, args=(node, db))
+    thread = threading.Thread(target=ClientSock, args=(network, node, db))
     logging.info('\nThread process created.')
     thread.daemon = True 
     thread.start()
