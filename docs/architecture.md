@@ -6,44 +6,24 @@ This document provides an architecture specification for the Photoblocks applica
 
 The `start.sh` script does the following:
 
-- Starts a dockerized Redis server at the default port (6379).
-- Creates a virtual environment with the Python dependencies.
-- Starts a photoblocks server.
+- Starts a [network scanner](#initial-scanner).
+- Starts a Docker container, which runs a the [main node process](#main-process) and a [local Redis server](#local-database).
 
 ## Networking
 
-To ensure the integrity of the data stored on a blockchain, the machines that comprise a blockchain's network must share computation and storage responsibilities in a way that limits single points of failure. Sharing computational and storage responsibilities (i.e., participating in the consensus algorithm and storing and validating the blockchain itself) across nodes on a network is not possible in a conventional, centralized network architecture of many requesting clients and few responding servers. In order for a blockchain to exist, a large number of the nodes on the network must act as both client and server (i.e., as peers). Peer-to-peer networking is integral to all blockchain architectures. 
+In all blockchain architectures, establishing a peer-to-peer network is integral to maintaining data integrity.
 
-Because this application is designed for mobile clients as the primary end users, I propose a semi-distributed blockchain network, wherein a distributed network of computers function as nodes in a traditional blockchain (i.e., peers in a peer-to-peer network), and mobile clients can access the blockchain through a representative node (i.e., a mobile "server") that only partially participates in mining and consensus. 
+### Initial scanner
 
-As is common in traditional blockchains, different types of nodes take on more responsibility than others. The different types of nodes on the network are as follows:
+The initial scanner ([`scan.py`](../scan.py)) maps out the machines on the network, and determines which ports are free and which ports are taken, for each host in the network.
 
-- Mobile nodes
-- Full nodes
-- Seed nodes
-- A head node
+1. The scanner first attempts to open a socket connection to all ports on the same host, to determine if other nodes are running at a given port.
 
-Each node runs the [same few processes](#node-processes), with slight variations in their functions in the network.
+2. The scanner then runs an ARP scan and returns a list of all of the detected machines running on the 
 
-### Mobile nodes
+### Consensus
 
-The primary function of mobile nodes is to serve as representatives in the blockchain for mobile clients. As such, mobile nodes serve a simple REST API that accepts mining requests from mobile applications, and then performs the Proof-of-Work algorithm on behalf of the mobile client. Light nodes are the most server-like of the nodes on the network.
-
-In addition to performing the mobile PoW, light nodes store a subset of the blockchain that they regularly check against data on larger nodes, for consensus.
-
-### Full nodes
-
-Full nodes store the entirety of the blockchain. They participate in the consensus algorithm, continuously validating the blockchain against other nodes in the network. 
-
-### Seed nodes
-
-Seed nodes are full nodes that listen for new nodes to which to send the validated blockchain and peerlist. In addition to performing the functions of a full node (i.e., store and validate the blockchain), they catalogue new nodes on the network and respond to requests from new nodes scanning the network for existing nodes. In this respect, seed nodes function a little like load-balancers.
-
-### Head node
-
-The head node is the seed node that creates the blockchain and the first block (i.e., the Genesis Block). The head node serves the blockchain at the first seed port. There is only one head one.
-
-## Node processes
+The 
 
 Every node runs a script (`main.py`) that starts the following processes on that node:
 
@@ -54,65 +34,29 @@ Mobile nodes also feature a lightweight REST API. For details, see [Interfaces](
 
 In the future, it would be nice to also have a Docker container, loaded with all dependencies (Redis, non-standard python libraries, etc.).
 
-## Networking
+## Nodes
 
-### Client sockets
+### Node types
 
+As is common in traditional blockchains, different types of nodes take on more responsibility than others. The different types of nodes on the network are as follows:
 
-### Server sockets 
+- [Head node](#head-node)
+- [Seed nodes](#seed-nodes)
+- [Full nodes](#full-nodes)
 
+Each node runs the [same main processes](#main-process).
 
-### Consensus
+#### Head node
 
+The head node is the seed node that creates the blockchain and the first block (i.e., the Genesis Block). The head node serves the blockchain at the first seed port. There is only one head one.
 
-## Storage
+### Full nodes
 
-Each node runs a [Redis](https://github.com/redis/redis) server locally.
+Full nodes store the entirety of the blockchain. They participate in the consensus algorithm, continuously validating the blockchain against other nodes in the network. 
 
-Each node's Redis server stores the following components:
+### Seed nodes
 
-- Node metadata
-- Networking metadata
-- Blockchain data
-
-### Node metadata storage
-
-Each `Node` object has a corresponding *pack* (represented by the `Node.pack` attribute). A pack contains the following information:
-
-- Node type (`Node.node_type`)
-- Node ID (`Node.node_id`)
-- Node host (`Node.host`)
-- Node port (`Node.port`)
-
-### Blockchain data storage
-
-Like `Node` objects, `Block` objects have corresponding packs, which contain the following information:
-
-- Block type
-- Block id
-- Block hash
-- Last block hash
-
-All nodes store all blocks.
-
-## Interfaces
-
- types of users:
-
-- Mobile users
-- Miners
-- Operators
-
-Each user type corresponds to a node type, and each node type has a user-specific interface.
-
-### Mobile interface
-
-The primary interface for mobile users is the mobile application. This application 
-
-### Miner interface
-
-### Operator interface
-
+Seed nodes are full nodes that listen for new nodes to which to send the validated blockchain and peerlist. In addition to performing the functions of a full node (i.e., store and validate the blockchain), they catalogue new nodes on the network and respond to requests from new nodes scanning the network for existing nodes. In this respect, seed nodes function a little like load-balancers.
 
 <!-- 
 ## Registration

@@ -2,7 +2,7 @@
 import socket
 import logging
 import argparse
-import os
+import subprocess
 import re
 import json
 
@@ -29,7 +29,8 @@ def scan(ip, ports, sock):
                 logging.info(f'\nNode serving at port {ip}:{port}.')
                 pdict[port] = 1
             else:
-                logging.info(f'\nSomething is serving at {ip}:{port} (but its not a node).')
+                logging.info(
+                    f'\nSomething is serving at {ip}:{port} (but its not a node).')
                 pdict[port] = 2
         except socket.error:
             logging.info(f'\nPort {port} free on {ip}.')
@@ -41,25 +42,26 @@ def parse():
     """Parses node type passed from start script.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('type', help='The type of the node. Valid options include "head", "seed", and "full"')
+    parser.add_argument(
+        'type', help='The type of the node. Valid options include "head", "seed", and "full"')
     args = parser.parse_args()
     return args
 
 
 def main():
-    """Main process for network scanner.
+    """Main process for initial network scanner.
     """
     logging.basicConfig(level=logging.INFO)
     logging.info('\nScanning network for available ports...')
 
     # Initialize list of possible ports
-    PORTS = list(range(7000,7005))
+    PORTS = list(range(7000, 7005))
 
     # Open UDP socket connection with GC public DNS for local machine IP address
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         s.connect(("8.8.8.8", 80))
         LOCAL_IP = str(s.getsockname()[0])
-    
+
     # nodes is a dict of dicts; each top-level key is an IP address; each bottom-level key is a port, with a value in 0-5.
     # nodes = {LOCAL_IP: dict.fromkeys(PORTS, 0)}
     nodes = {}
@@ -77,45 +79,55 @@ def main():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         nodes[LOCAL_IP] = scan(LOCAL_IP, PORTS, sock)
         for port in PORTS[PORTS.index(local_port):]:
-            if nodes[LOCAL_IP][port] in [1,2]:
+            if nodes[LOCAL_IP][port] in [1, 2]:
                 logging.info(f'\nPort {port} occupied on local machine.')
                 if port == PORTS[0]:
-                    logging.info(f'\nOnly one head node is allowed on the blockchain. Demoting to seed node.')
+                    logging.info(
+                        f'\nOnly one head node is allowed on the blockchain. Demoting to seed node.')
                     continue
                 elif port == PORTS[1]:
-                    logging.info(f'\nOnly one seed node is allowed on any one machine. Demoting to full node.')
+                    logging.info(
+                        f'\nOnly one seed node is allowed on any one machine. Demoting to full node.')
                     continue
                 elif port == PORTS[-1]:
-                    logging.info(f'\nNo node ports are available on local machine! Free up a port between 7002 and 7004, and try again.')
+                    logging.info(
+                        f'\nNo node ports are available on local machine! Free up a port between 7002 and 7004, and try again.')
                     return
             else:
                 logging.info(f'\nPort {port} is available on local machine.')
                 local_port = port
-                logging.info(f'\nLocal node set port to {local_port}. Scanning network for existing nodes.')
+                logging.info(
+                    f'\nLocal node set port to {local_port}. Scanning network for existing nodes.')
                 break
-        with os.popen('arp -a') as f:
-            data = f.read()
+        data = subprocess.run("arp -a", capture_output=True).stdout
         ips = re.findall(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", data)
         for ip in ips:
             if ip == LOCAL_IP:
                 continue
             nodes[ip] = scan(ip, PORTS, sock)
             if nodes[ip][PORTS[0]] is 1 and local_port == PORTS[0]:
-                logging.info(f'\nHead node port in use by node on machine at {ip}.')
-                logging.info(f'\nOnly one head node is allowed on the blockchain. Demoting local machine node.')
+                logging.info(
+                    f'\nHead node port in use by node on machine at {ip}.')
+                logging.info(
+                    f'\nOnly one head node is allowed on the blockchain. Demoting local machine node.')
                 if nodes[LOCAL_IP][PORTS[1]] is 4:
-                    logging.info(f'\nSeed node port free on machine on local machine at {LOCAL_IP}. Demoting to seed node.')
+                    logging.info(
+                        f'\nSeed node port free on machine on local machine at {LOCAL_IP}. Demoting to seed node.')
                     local_port = PORTS[1]
                 else:
-                    logging.info(f'\nSeed node port in use by node on local machine at {LOCAL_IP}.')
-                    logging.info(f'\nOnly one seed node is allowed on any one machine. Demoting to full node.')
+                    logging.info(
+                        f'\nSeed node port in use by node on local machine at {LOCAL_IP}.')
+                    logging.info(
+                        f'\nOnly one seed node is allowed on any one machine. Demoting to full node.')
                     for port in PORTS[2:]:
                         if nodes[LOCAL_IP][port] is 4:
                             local_port = port
                             break
                         if port == PORTS[-1]:
-                            logging.info(f'\nNo node ports are available on local machine! Free up a port between 7002 and 7007, and try again.')
+                            logging.info(
+                                f'\nNo node ports are available on local machine! Free up a port between 7002 and 7007, and try again.')
                             return
+
     nodes[LOCAL_IP][local_port] = 5
     local_address = (LOCAL_IP, local_port)
     network = {"local": local_address, "peers": nodes}
@@ -125,6 +137,6 @@ def main():
 
     return
 
+
 if __name__ == '__main__':
     main()
-

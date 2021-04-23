@@ -5,10 +5,13 @@ import redis
 import threading
 import time
 from photoblocks.models.node import Node
-from photoblocks.networking.socks import ClientSock, ServerSock
+from photoblocks.networking.clientsock import ClientSock
+from photoblocks.networking.serversock import serversock
 
 
 def main():
+    """Main process for blockchain node.
+    """
     logging.basicConfig(level=logging.INFO)
     logging.info('\nStarting node server...')
 
@@ -25,26 +28,26 @@ def main():
     logging.info('\nCreating Node data structure from configuration...')
     node = Node(network["local"])
     logging.info(f'\nNode data structure created.')
-    
+
     # Start a node socket client
     logging.info('\nStarting node socket client on background thread...')
     thread = threading.Thread(target=ClientSock, args=(network, node, db))
     logging.info('\nThread process created.')
-    thread.daemon = True 
+    thread.daemon = True
     thread.start()
     logging.info('\nThread process started.')
 
-
     # Start node socket server
     logging.info('\nStarting node socket server on background thread...')
-    thread = threading.Thread(target=ServerSock, args=(db))
+    thread = threading.Thread(target=serversock, args=(db))
     logging.info('\nThread process created.')
-    thread.daemon = True 
+    thread.daemon = True
     thread.start()
     logging.info('\nThread process started.')
 
     while True:
         time.sleep(5)
+
 
 if __name__ == '__main__':
     main()

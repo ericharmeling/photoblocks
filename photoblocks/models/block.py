@@ -1,15 +1,14 @@
-# block.py
-# Defines the Block class, a data structure for transactional data
-
 import hashlib
 import json
 
 
 class Block:
-    def __init__(self, index, timestamp, location, data, image, label, last_hash, nonce=0):
+    """Represents a block in the blockchain.
+    """
+
+    def __init__(self, index, timestamp, data, image, label, last_hash, nonce=0):
         self.index = index
         self.timestamp = str(timestamp)
-        self.location = location
         self.data = data
         self.image = image
         self.label = label

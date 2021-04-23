@@ -114,6 +114,7 @@ Pipfile.lock
 
 # config
 config.*
+network.json
 
 .vscode/
 
