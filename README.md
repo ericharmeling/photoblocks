@@ -1,16 +1,5 @@
 # Photoblocks
 
-## Contents
-
-* [Overview](#overview)
-* [Prerequisites](#prerequisites)
-* [Registration](#registration)
-* [Mining](#mining)
-* [Trading](#trading)
-* [Recommended Reading](#recommended-reading)
-
-## Overview
-
 Photoblocks is an in-development blockchain platform built on an image-labeling mining system.
 
 For a more detailed architecture specification, see [docs/architecture.md](docs/architecture.md).

@@ -6,33 +6,46 @@ This document provides an architecture specification for the Photoblocks applica
 
 The `start.sh` script does the following:
 
-- Starts a [network scanner](#initial-scanner).
+- Starts a [network scanner](#scanner).
 - Starts a Docker container, which runs a the [main node process](#main-process) and a [local Redis server](#local-database).
 
 ## Networking
 
-In all blockchain architectures, establishing a peer-to-peer network is integral to maintaining data integrity.
+In all blockchain architectures, establishing a peer-to-peer network is integral to maintaining data integrity. Each node that joins the network needs to know about the peers on the network, both before joining the network, and after joining. 
 
-### Initial scanner
+### Scanner
 
-The initial scanner ([`scan.py`](../scan.py)) maps out the machines on the network, and determines which ports are free and which ports are taken, for each host in the network.
+The initial scanner ([`scan.py`](../scan.py)) maps out the machines on the network, and determines which ports are free and which ports are taken, for each host in the network. This information informs the node's type and port, and it also initializes the subsequent (and continual) [consensus checks](#consensus).
 
-1. The scanner first attempts to open a socket connection to all ports on the same host, to determine if other nodes are running at a given port.
+The scanner does the following:
 
-2. The scanner then runs an ARP scan and returns a list of all of the detected machines running on the 
+1. Attempts to open a socket connection to all ports on the same host, to determine if other nodes are running at a given port, on the same machine.
+
+2. Runs an ARP scan on the network, and then attempts to open a socket connection to each photoblock-serving host/port combination on the network.
+
+3. Returns a three-level dictionary of all the detected machines running on the network, with information about each host/port combination.
 
 ### Consensus
 
-The 
+After the network has been mapped, the main python process (`main.py`) runs on the node until manually terminated.
 
-Every node runs a script (`main.py`) that starts the following processes on that node:
+The main process does the following:
 
-- A websocket server that pings other nodes for consensus. For details, see [Networking](#networking).
-- A Redis database server, for storing node and blockchain data locally. For details, see [Storage](#storage).
+- Connects to a running Redis database server, for storing node and blockchain data locally. For details, see [Storage](#storage).
+- Starts a websocket server that pings other nodes for consensus. For details, see [Sockets](#sockets).
+- Starts a websocket server that broadcasts local data on the network. For details, see [Sockets](#sockets).
 
-Mobile nodes also feature a lightweight REST API. For details, see [Interfaces](#interfaces).
+#### Sockets
 
-In the future, it would be nice to also have a Docker container, loaded with all dependencies (Redis, non-standard python libraries, etc.).
+To ensure that the blockchain on a given node is, in fact, valid, the blockchain must be validated by a consensus of the nodes on the network. Photoblocks implements a consensus algorithm with [BSD sockets](https://docs.python.org/3/library/socket.html).
+
+##### Client socket
+
+All nodes run a continual client socket on a background thread. 
+
+##### Server socket
+
+All nodes run a continual server socket on a background thread. 
 
 ## Nodes
 
@@ -40,23 +53,34 @@ In the future, it would be nice to also have a Docker container, loaded with all
 
 As is common in traditional blockchains, different types of nodes take on more responsibility than others. The different types of nodes on the network are as follows:
 
-- [Head node](#head-node)
-- [Seed nodes](#seed-nodes)
 - [Full nodes](#full-nodes)
+- [Seed nodes](#seed-nodes)
+- [Head node](#head-node)
 
-Each node runs the [same main processes](#main-process).
+Each node technically runs the [same main processes](#main-process). Logic throughout the application determines node behavior, based on the node type.
+
+#### Full nodes
+
+Full nodes store the entirety of the blockchain. They participate in consensus and continuously validate their local copy of the blockchain, and their list of peers in the network, against other nodes in the network. 
+
+#### Seed nodes
+
+Seed nodes are full nodes that serve on a specific port. The seed node ports (including the head node port) are the first ports from which data is requested from a client socket. In this respect, seed nodes function a little like load-balancers. 
+
+Only a select number of nodes on any given machine can be a seed node.
 
 #### Head node
 
-The head node is the seed node that creates the blockchain and the first block (i.e., the Genesis Block). The head node serves the blockchain at the first seed port. There is only one head one.
+The head node is the seed node that creates the blockchain and the first block (i.e., the Genesis Block). The head node serves the blockchain at the first seed port. 
 
-### Full nodes
+There is only one head node for the blockchain.
 
-Full nodes store the entirety of the blockchain. They participate in the consensus algorithm, continuously validating the blockchain against other nodes in the network. 
+## Mining 
 
-### Seed nodes
+Nodes create new blocks by solving a Proof-of-Work (PoW) algorithm. To solve the PhotoBlocks PoW, the node finds the nonce value that matches the new block's hashed data to a simple pattern. Once the hashed data matches the pattern, the node has solved the PoW algorithm, the block is created, and the miner is awarded a coin.
 
-Seed nodes are full nodes that listen for new nodes to which to send the validated blockchain and peerlist. In addition to performing the functions of a full node (i.e., store and validate the blockchain), they catalogue new nodes on the network and respond to requests from new nodes scanning the network for existing nodes. In this respect, seed nodes function a little like load-balancers.
+To simplify the PoW, a miner can send an image and a label. Each candidate image is sent through a trained TensorFlow image-recognition neural network. If the label that you provide matches a string in output of the scored image, your node will start to solve the PoW algorithm. 
+
 
 <!-- 
 ## Registration
@@ -79,13 +103,6 @@ following:
 * A candidate image to be placed in the candidate block
 * A label for the candidate image
 * A label for the image on the last block in the chain
-
-Each candidate image is sent through a basic TensorFlow image-recognition neural network. If the label that you provide matches a string in output of the
-scored image, your node will start to solve the PoW algorithm. 
-
-Nodes create new blocks by solving a Proof-of-Work (PoW) algorithm. To solve the PhotoBlocks PoW, the node finds 
-the nonce value that matches the new block's hashed data to a simple pattern. Once the hashed data matches the pattern, the node has 
-solved the PoW algorithm and the miner is awarded a coin.
  
 ## Trading
 To start trading coins, navigate to the "Trade" page of the PhotoBlocks web interface. You'll be asked to provide the following:
