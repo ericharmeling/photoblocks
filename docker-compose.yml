@@ -2,6 +2,5 @@ version: "3.9"
 services:
   photoblocks:
     build: .
-    environment: ${TYPE}
   redis:
     image: "redis:alpine"
