@@ -3,8 +3,9 @@ import logging
 import time
 
 
-def serversock(self, db):
-    """Broadcasts local node, peer, and blockchain data on network.
+def serversock(db):
+    """
+    Broadcasts local node, peer, and blockchain data on network.
     """
     pack = db.get("pack")
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
