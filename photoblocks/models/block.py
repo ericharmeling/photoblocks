@@ -3,7 +3,8 @@ import json
 
 
 class Block:
-    """Represents a block in the blockchain.
+    """
+    Represents a block in the blockchain.
     """
 
     def __init__(self, index, timestamp, data, image, label, last_hash, nonce=0):

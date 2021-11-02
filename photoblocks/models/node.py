@@ -1,11 +1,12 @@
 import socket
-from photoblocks.models.chain import Chain
+from .chain import Chain
 from uuid import uuid4
 import time
 
 
 class Node:
-    """Represents a node on the network.
+    """
+    Represents a node on the network.
     """
 
     def __init__(self, address):
