@@ -1,6 +1,6 @@
-requests
 datetime
 geocoder
-falcon
 redis
-websockets
+scapy
+tensorflow
+numpy

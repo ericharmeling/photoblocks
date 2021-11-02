@@ -2,113 +2,114 @@
 
 This document provides an architecture specification for the Photoblocks application.
 
-## Networking
+The following sections provide more detail about specific aspects of the application:
 
-To ensure the integrity of the data stored on a blockchain, the machines that comprise a blockchain's network must share computation and storage responsibilities in a way that limits single points of failure. Sharing computational and storage responsibilities (i.e., participating in the consensus algorithm and storing and validating the blockchain itself) across nodes on a network is not possible in a conventional, centralized network architecture of many requesting clients and few responding servers. In order for a blockchain to exist, a large number of the nodes on the network must act as both client and server (i.e., as peers). Peer-to-peer networking is integral to all blockchain architectures. 
+- [Nodes](#nodes)
+- [Networking](#networking)
+- [Mining](#mining)
 
-Because this application is designed for mobile clients as the primary end users, I propose a semi-distributed blockchain network, wherein a distributed network of computers function as nodes in a traditional blockchain (i.e., peers in a peer-to-peer network), and mobile clients can access the blockchain through a representative node (i.e., a mobile "server") that only partially participates in mining and consensus. 
+## Nodes
+
+Photoblocks is a blockchain application. Each instance of the application participates as a node in a peer-to-peer network of other nodes.
+
+### Node types
 
 As is common in traditional blockchains, different types of nodes take on more responsibility than others. The different types of nodes on the network are as follows:
 
-- Mobile nodes
-- Full nodes
-- Seed nodes
-- A head node
+- [Full nodes](#full-nodes)
+- [Seed nodes](#seed-nodes)
+- [Head node](#head-node)
 
-Each node runs the [same few processes](#node-processes), with slight variations in their functions in the network.
+Each node technically runs the [same main processes](#main-node-process). Logic throughout the application determines node behavior, based on the node type.
 
-### Mobile nodes
+#### Full nodes
 
-The primary function of mobile nodes is to serve as representatives in the blockchain for mobile clients. As such, mobile nodes serve a simple REST API that accepts mining requests from mobile applications, and then performs the Proof-of-Work algorithm on behalf of the mobile client. Light nodes are the most server-like of the nodes on the network.
+Full nodes store the entirety of the blockchain. They participate in consensus and continuously validate their local copy of the blockchain, and their list of peers in the network, against other nodes in the network. 
 
-In addition to performing the mobile PoW, light nodes store a subset of the blockchain that they regularly check against data on larger nodes, for consensus.
+#### Seed nodes
 
-### Full nodes
+Seed nodes are full nodes that serve on a specific port. The seed node ports (including the head node port) are the first ports from which data is requested from a client socket. In this respect, seed nodes function a little like load-balancers. 
 
-Full nodes store the entirety of the blockchain. They participate in the consensus algorithm, continuously validating the blockchain against other nodes in the network. 
+Only a select number of nodes on any given machine can be a seed node.
 
-### Seed nodes
+#### Head node
 
-Seed nodes are full nodes that listen for new nodes to which to send the validated blockchain and peerlist. In addition to performing the functions of a full node (i.e., store and validate the blockchain), they catalogue new nodes on the network and respond to requests from new nodes scanning the network for existing nodes. In this respect, seed nodes function a little like load-balancers.
+The head node is the seed node that creates the blockchain and the first block (i.e., the Genesis Block). The head node serves the blockchain at the first seed port. 
 
-### Head node
+There is only one head node for the blockchain.
 
-The head node is the seed node that creates the blockchain and the first block (i.e., the Genesis Block). The head node serves the blockchain at the first seed port. There is only one head one.
+### Main node process
 
-## Node processes
+The main node process does the following:
 
-Every node runs a script (`main.py`) that starts the following processes on that node:
+- Connects to a running Redis database server, for storing node and blockchain data locally. For details, see [Local node storage](#local-node-storage).
+- Starts a websocket server that pings other nodes for consensus. For details, see [Sockets](#sockets).
+- Starts a websocket server that broadcasts local data on the network. For details, see [Sockets](#sockets).
 
-- A websocket server that pings other nodes for consensus. For details, see [Networking](#networking).
-- A Redis database server, for storing node and blockchain data locally. For details, see [Storage](#storage).
+### Local node storage
 
-Mobile nodes also feature a lightweight REST API. For details, see [Interfaces](#interfaces).
-
-In the future, it would be nice to also have a Docker container, loaded with all dependencies (Redis, non-standard python libraries, etc.).
+Each node records its copy of the blockchain, and some networking metadata, on a local Redis server.
 
 ## Networking
 
-### Client sockets
+In all blockchain architectures, maintaining a peer-to-peer network is integral to maintaining data integrity. Each node that joins the network needs to know about the peers on the network, both before joining the network, and after joining. 
 
-Each node is represented in memory by a Node object (defined in `models/node.py`). The Node class contains some property functions that open up a client socket connection with any existing seed nodes on the network. Client socket connections are opened and closed each time 
+### Start script
 
-### Server sockets 
+To start a local blockchain, first run the `start.sh` script, with `head` as the primary argument.
 
+The `start.sh` script does the following:
+
+- Starts a [network scanner](#scanner).
+- Creates a Docker container, which runs a the [main node process](#main-process) and a [local Redis server](#local-database).
+
+### Scanner
+
+The initial scanner ([`scan.py`](../scan.py)) maps out the machines on the network, and determines which ports are free and which ports are taken, for each host in the network. This information informs the node's type and port, and it also initializes the subsequent (and continual) [consensus checks](#consensus).
+
+The scanner does the following:
+
+1. Attempts to open a socket connection to all ports on the same host, to determine if other nodes are running at a given port, on the same machine. Running multiple nodes on a single machine can be helpful for debugging.
+
+2. Runs an [ARP](https://en.wikipedia.org/wiki/Address_Resolution_Protocol) scan on the network, and then attempts to open a socket connection to each photoblock-serving host/port combination on the network.
+
+3. Returns a three-level dictionary of all the detected machines running on the network, with information about each host/port combination.
 
 ### Consensus
 
+After the network has been mapped, the main python process (`main.py`) runs on the node until manually terminated.
 
-## Storage
+#### Sockets
 
-Each node runs a Redis server locally. Redis makes storing pythonic objects more convenient than SQL databases, at the cost of some amount of row integrity. The integrity of stored data isn't as important in the context of a blockchain, as the data is continually validated.
+To ensure that the blockchain on a given node is, in fact, valid, the blockchain must be validated by a consensus of the nodes on the network. Photoblocks implements a consensus algorithm with [BSD sockets](https://docs.python.org/3/library/socket.html).
 
-Each node's Redis server stores the following components:
+##### Client socket
 
-- Node metadata
-- Blockchain data
+All nodes run a continual client socket on a background thread. 
 
-### Node metadata storage
+##### Server socket
 
-Each `Node` object has a corresponding *pack* (represented by the `Node.pack` attribute). A pack contains the following information:
+All nodes run a continual server socket on a background thread. 
 
-- Node type (`Node.node_type`)
-- Node key (`Node.node_key`)
-- Node ID (`Node.node_id`)
-- Node port (`Node.port`)
+## Mining 
 
-All nodes store the node packs of all other nodes on the network. The packs are stored in Redis with the *node ID* as the key and a string representation of the *node pack* as the value.
+### Mining API
 
-In addition to storing all node packs at the very top of the database hierarchy, each node stores a full list of all nodes in the network (i.e., the "peer list").
+The Photoblocks mining API is the interface by which users can create blocks in the block chain (and receive coins).
 
-### Blockchain data storage
+This API is only accessible to users with full, running nodes. Each request made through the API must be authenticated.
 
-Like `Node` objects, `Block` objects have corresponding packs, which contain the following information:
+### Mining Authentication
 
-- Block type
-- Block id
-- Block hash
-- Last block hash
+In order to interact with the mining API, the user request must be authenticated.
 
-All nodes store all blocks.
+To authenticate, the user passes the unique ID of the full node and their username and passcode. The credential management system validates the credentials in the request, and checks the blockchain to see if the credentials match the node ID stored on the chain.
 
-## Interfaces
+### Proof-of-Work
 
- types of users:
+Nodes create new blocks by solving a Proof-of-Work (PoW) algorithm. To solve the PhotoBlocks PoW, the node finds the nonce value that matches the new block's hashed data to a simple pattern. Once the hashed data matches the pattern, the node has solved the PoW algorithm, the block is created, and the miner is awarded a coin.
 
-- Mobile users
-- Miners
-- Operators
-
-Each user type corresponds to a node type, and each node type has a user-specific interface.
-
-### Mobile interface
-
-The primary interface for mobile users is the mobile application. This application 
-
-### Miner interface
-
-### Operator interface
-
+Photoblocks uses image recognition to simplify the PoW. Rather than attempting to mine with brute-force, a miner can send an image and a label to the blockchain to the network. Each candidate image is sent through a trained TensorFlow image-recognition neural network. If the label that you provide matches a string in output of the scored image, your node will attempt to solve a simplified PoW algorithm. 
 
 <!-- 
 ## Registration
@@ -131,13 +132,6 @@ following:
 * A candidate image to be placed in the candidate block
 * A label for the candidate image
 * A label for the image on the last block in the chain
-
-Each candidate image is sent through a basic TensorFlow image-recognition neural network. If the label that you provide matches a string in output of the
-scored image, your node will start to solve the PoW algorithm. 
-
-Nodes create new blocks by solving a Proof-of-Work (PoW) algorithm. To solve the PhotoBlocks PoW, the node finds 
-the nonce value that matches the new block's hashed data to a simple pattern. Once the hashed data matches the pattern, the node has 
-solved the PoW algorithm and the miner is awarded a coin.
  
 ## Trading
 To start trading coins, navigate to the "Trade" page of the PhotoBlocks web interface. You'll be asked to provide the following:
@@ -154,3 +148,5 @@ block is mined, valid transactions are moved from the buffer to the block.
 * [A Practical Introduction to Blockchain with Python](http://adilmoujahid.com/posts/2018)
 * [Learn Blockchains by Building One](https://hackernoon.com/learn-blockchains-by-building-one-117428612f46)
 * [ibm_blockchain](https://github.com/satwikkansal/ibm_blockchain)
+* [An Intro to Threading in Python](https://realpython.com/intro-to-python-threading/)
+* [Socket Programming in Python](https://realpython.com/python-sockets/)
