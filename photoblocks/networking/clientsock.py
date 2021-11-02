@@ -3,20 +3,21 @@ import logging
 
 
 class ClientSock:
-    """Client socket
+    """
+    Client socket
     """
 
     def __init__(self, network, node, db):
         self.node = node
-        self.network = network
         self.db = db
-        self.peers = network["peers"]
+        self.peers = {peer:{int(port):values for port, values in ports.items()} for peer, ports in network["peers"].items()}
         self.seeds = self.fetchseeds()
 
         self.sync()
 
     def sync(self):
-        """Updates peer list and blockchain. This function is run on a background thread.
+        """
+        Updates peer list and blockchain. This function is run on a background thread.
         """
         if len(self.seeds) is 0:
             logging.info(
@@ -30,15 +31,16 @@ class ClientSock:
                 self.store()
 
     def fetchseeds(self):
-        """Returns seeds from initial scanner.
+        """
+        Returns seeds from initial scanner.
         """
         seeds = []
         ports = [7000, 7001]
         if self.node.port == 7000:
             ports = ports[1:]
-        for ip in self.network["peers"]:
+        for ip in self.peers:
             for port in ports:
-                if self.network["peers"][ip][port] is 1:
+                if self.peers[ip][port] is 1:
                     logging.info(f'\nReading in scanned seed at {ip}:{port}.')
                     seeds.append((ip, port))
                 else:
@@ -49,7 +51,8 @@ class ClientSock:
         return seeds
 
     def updatepeers(self, sock):
-        """Updates the list of peer nodes on the network.
+        """
+        Updates the list of peer nodes on the network.
         """
         seed_peerlist = {}
         for address in self.seeds:
@@ -93,7 +96,8 @@ class ClientSock:
                 last_peerlist = peerlist
 
     def updatechain(self, sock):
-        """Updates the blockchain.
+        """
+        Updates the blockchain.
         """
         chains = {}
         for address in self.seeds:
@@ -137,7 +141,8 @@ class ClientSock:
             return
 
     def store(self):
-        """Stores seeds, peers, and blockchain data on a local Redis server.
+        """
+        Stores seeds, peers, and blockchain data on a local Redis server.
         """
         self.db.set("seeds", str(self.seeds))
         self.db.set("peers", str(self.peers))
