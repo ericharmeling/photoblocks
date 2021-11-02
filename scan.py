@@ -2,13 +2,14 @@
 import socket
 import logging
 import argparse
-import subprocess
+import scapy.all as scapy
 import re
 import json
 
 
 def scan(ip, ports, sock):
-    """Attempts to establish a socket connection from the local machine to a host, at a given list of ports.
+    """
+    Attempts to establish a socket connection from the local machine to a host, at a given list of ports.
     Port values:
     0: availability unknown.
     1: port occupied by a node.
@@ -39,7 +40,8 @@ def scan(ip, ports, sock):
 
 
 def parse():
-    """Parses node type passed from start script.
+    """
+    Parses node type passed from start script.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -49,7 +51,8 @@ def parse():
 
 
 def main():
-    """Main process for initial network scanner.
+    """
+    Main process for initial network scanner.
     """
     logging.basicConfig(level=logging.INFO)
     logging.info('\nScanning network for available ports...')
@@ -99,9 +102,9 @@ def main():
                 logging.info(
                     f'\nLocal node set port to {local_port}. Scanning network for existing nodes.')
                 break
-        data = subprocess.run("arp -a", capture_output=True).stdout
-        ips = re.findall(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", data)
-        for ip in ips:
+        hosts = scapy.arping(LOCAL_IP)
+        for host in hosts[0]:
+            ip = host[1][0].src 
             if ip == LOCAL_IP:
                 continue
             nodes[ip] = scan(ip, PORTS, sock)
