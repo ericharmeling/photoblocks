@@ -1,4 +1,0 @@
-TO DO:
-- (socks.py) rewrite sockets to take port, not store seed ports, node types, etc
-- (scan.py) use scapy to ARP scan for IP address list
-- (docker-compose.yaml, Dockerfile) rewrite for port forwarding
