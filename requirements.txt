@@ -1,3 +1,6 @@
 datetime
 geocoder
 redis
+scapy
+tensorflow
+numpy

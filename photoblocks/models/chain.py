@@ -1,10 +1,12 @@
 import datetime
-from photoblocks.models.block import Block
-#from models.image import Image
+from .block import Block
+from models.image import Image
+import logging
 
 
 class Chain:
-    """Represents the blockchain.
+    """
+    Represents the blockchain.
     """
 
     def __init__(self):
@@ -14,13 +16,15 @@ class Chain:
 
     @property
     def last_block(self):
-        """Returns the last block in the blockchain.
+        """
+        Returns the last block in the blockchain.
         """
         return self.chain[-1]
 
     @staticmethod
     def gen_block():
-        """Creates and returns the first block in the blockchain.
+        """
+        Creates and returns the first block in the blockchain.
         """
         gen_data = {"name": "The First Block", "sender": "God",
                     "recipient": "Mankind", "quantity": 0}
@@ -31,7 +35,8 @@ class Chain:
         return genesis
 
     def new_block(self, image, label, data=None, nonce=0):
-        """Creates a new block from and image and a label.
+        """
+        Creates a new block from and image and a label.
         """
         index = len(self.chain) + 1
         timestamp = datetime.datetime.now()
@@ -44,7 +49,8 @@ class Chain:
 
     @staticmethod
     def is_valid_hash(block):
-        """Validates hash.
+        """
+        Validates hash.
         """
         block_hash = block.hash_block()
         if (block.image and block_hash.startswith('0')) or block_hash.startswith('0'*4):
@@ -53,7 +59,8 @@ class Chain:
             return False
 
     def add_transaction(self, sender, recipient, quantity):
-        """Adds transaction to block data.
+        """
+        Adds transaction to block data.
         """
         timestamp = datetime.datetime.now()
         data = {"sender": sender, "recipient": recipient,
@@ -61,7 +68,8 @@ class Chain:
         self.transactions.append(data)
 
     def is_valid_chain(self, chain):
-        """Validates chain.
+        """
+        Validates chain.
         """
         for block in chain:
             if not self.is_valid_hash(block) or block.last_hash != chain.last_block.hash_block():
@@ -71,24 +79,26 @@ class Chain:
         return result
 
 
-"""
     @staticmethod
-    def proof_of_work(self, block):
+    def proof_of_work(block):
+        """
+        Implements proof of work.
+        """
         new_block = block
+        image = Image(image=new_block.image, label=new_block.label)
 
-        print(f"Running image processor")
-        if image_match(image=new_block.image, label=new_block.label):
+        logging.info(f"Running image processor")
+        if image.image_match():
             new_hash = new_block.hash_block()
-            print(f"Image matched!\n Starting simplified PoW...")
+            logging.info(f"Image matched!\n Starting simplified PoW...")
             while new_hash.startswith('0') is False:
                 new_block.nonce += 1
                 new_hash = new_block.hash_block()
-                print(new_hash)
+                logging.info(new_hash)
             return new_block.nonce
         else:
-            print(f"No image match found\n Starting PoW...")
+            logging.info(f"No image match found\n Starting PoW...")
             new_hash = new_block.hash_block()
             while new_hash.startswith('0' * 4) is False:
                 new_block.nonce += 1
             return new_block.nonce
-"""
