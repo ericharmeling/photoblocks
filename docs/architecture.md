@@ -2,52 +2,15 @@
 
 This document provides an architecture specification for the Photoblocks application.
 
-## Start script
+The following sections provide more detail about specific aspects of the application:
 
-The `start.sh` script does the following:
-
-- Starts a [network scanner](#scanner).
-- Starts a Docker container, which runs a the [main node process](#main-process) and a [local Redis server](#local-database).
-
-## Networking
-
-In all blockchain architectures, establishing a peer-to-peer network is integral to maintaining data integrity. Each node that joins the network needs to know about the peers on the network, both before joining the network, and after joining. 
-
-### Scanner
-
-The initial scanner ([`scan.py`](../scan.py)) maps out the machines on the network, and determines which ports are free and which ports are taken, for each host in the network. This information informs the node's type and port, and it also initializes the subsequent (and continual) [consensus checks](#consensus).
-
-The scanner does the following:
-
-1. Attempts to open a socket connection to all ports on the same host, to determine if other nodes are running at a given port, on the same machine.
-
-2. Runs an ARP scan on the network, and then attempts to open a socket connection to each photoblock-serving host/port combination on the network.
-
-3. Returns a three-level dictionary of all the detected machines running on the network, with information about each host/port combination.
-
-### Consensus
-
-After the network has been mapped, the main python process (`main.py`) runs on the node until manually terminated.
-
-The main process does the following:
-
-- Connects to a running Redis database server, for storing node and blockchain data locally. For details, see [Storage](#storage).
-- Starts a websocket server that pings other nodes for consensus. For details, see [Sockets](#sockets).
-- Starts a websocket server that broadcasts local data on the network. For details, see [Sockets](#sockets).
-
-#### Sockets
-
-To ensure that the blockchain on a given node is, in fact, valid, the blockchain must be validated by a consensus of the nodes on the network. Photoblocks implements a consensus algorithm with [BSD sockets](https://docs.python.org/3/library/socket.html).
-
-##### Client socket
-
-All nodes run a continual client socket on a background thread. 
-
-##### Server socket
-
-All nodes run a continual server socket on a background thread. 
+- [Nodes](#nodes)
+- [Networking](#networking)
+- [Mining](#mining)
 
 ## Nodes
+
+Photoblocks is a blockchain application. Each instance of the application participates as a node in a peer-to-peer network of other nodes.
 
 ### Node types
 
@@ -57,7 +20,7 @@ As is common in traditional blockchains, different types of nodes take on more r
 - [Seed nodes](#seed-nodes)
 - [Head node](#head-node)
 
-Each node technically runs the [same main processes](#main-process). Logic throughout the application determines node behavior, based on the node type.
+Each node technically runs the [same main processes](#main-node-process). Logic throughout the application determines node behavior, based on the node type.
 
 #### Full nodes
 
@@ -75,12 +38,78 @@ The head node is the seed node that creates the blockchain and the first block (
 
 There is only one head node for the blockchain.
 
+### Main node process
+
+The main node process does the following:
+
+- Connects to a running Redis database server, for storing node and blockchain data locally. For details, see [Local node storage](#local-node-storage).
+- Starts a websocket server that pings other nodes for consensus. For details, see [Sockets](#sockets).
+- Starts a websocket server that broadcasts local data on the network. For details, see [Sockets](#sockets).
+
+### Local node storage
+
+Each node records its copy of the blockchain, and some networking metadata, on a local Redis server.
+
+## Networking
+
+In all blockchain architectures, maintaining a peer-to-peer network is integral to maintaining data integrity. Each node that joins the network needs to know about the peers on the network, both before joining the network, and after joining. 
+
+### Start script
+
+To start a local blockchain, first run the `start.sh` script, with `head` as the primary argument.
+
+The `start.sh` script does the following:
+
+- Starts a [network scanner](#scanner).
+- Creates a Docker container, which runs a the [main node process](#main-process) and a [local Redis server](#local-database).
+
+### Scanner
+
+The initial scanner ([`scan.py`](../scan.py)) maps out the machines on the network, and determines which ports are free and which ports are taken, for each host in the network. This information informs the node's type and port, and it also initializes the subsequent (and continual) [consensus checks](#consensus).
+
+The scanner does the following:
+
+1. Attempts to open a socket connection to all ports on the same host, to determine if other nodes are running at a given port, on the same machine. Running multiple nodes on a single machine can be helpful for debugging.
+
+2. Runs an [ARP](https://en.wikipedia.org/wiki/Address_Resolution_Protocol) scan on the network, and then attempts to open a socket connection to each photoblock-serving host/port combination on the network.
+
+3. Returns a three-level dictionary of all the detected machines running on the network, with information about each host/port combination.
+
+### Consensus
+
+After the network has been mapped, the main python process (`main.py`) runs on the node until manually terminated.
+
+#### Sockets
+
+To ensure that the blockchain on a given node is, in fact, valid, the blockchain must be validated by a consensus of the nodes on the network. Photoblocks implements a consensus algorithm with [BSD sockets](https://docs.python.org/3/library/socket.html).
+
+##### Client socket
+
+All nodes run a continual client socket on a background thread. 
+
+##### Server socket
+
+All nodes run a continual server socket on a background thread. 
+
 ## Mining 
+
+### Mining API
+
+The Photoblocks mining API is the interface by which users can create blocks in the block chain (and receive coins).
+
+This API is only accessible to users with full, running nodes. Each request made through the API must be authenticated.
+
+### Mining Authentication
+
+In order to interact with the mining API, the user request must be authenticated.
+
+To authenticate, the user passes the unique ID of the full node and their username and passcode. The credential management system validates the credentials in the request, and checks the blockchain to see if the credentials match the node ID stored on the chain.
+
+### Proof-of-Work
 
 Nodes create new blocks by solving a Proof-of-Work (PoW) algorithm. To solve the PhotoBlocks PoW, the node finds the nonce value that matches the new block's hashed data to a simple pattern. Once the hashed data matches the pattern, the node has solved the PoW algorithm, the block is created, and the miner is awarded a coin.
 
-To simplify the PoW, a miner can send an image and a label. Each candidate image is sent through a trained TensorFlow image-recognition neural network. If the label that you provide matches a string in output of the scored image, your node will start to solve the PoW algorithm. 
-
+Photoblocks uses image recognition to simplify the PoW. Rather than attempting to mine with brute-force, a miner can send an image and a label to the blockchain to the network. Each candidate image is sent through a trained TensorFlow image-recognition neural network. If the label that you provide matches a string in output of the scored image, your node will attempt to solve a simplified PoW algorithm. 
 
 <!-- 
 ## Registration
