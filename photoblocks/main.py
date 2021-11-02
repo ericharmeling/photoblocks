@@ -1,27 +1,32 @@
 #!/usr/bin/env python3
+
+# Imports
 import logging
 import json
 import redis
 import threading
 import time
-from photoblocks.models.node import Node
-from photoblocks.networking.clientsock import ClientSock
-from photoblocks.networking.serversock import serversock
+
+# Local module imports
+from models.node import Node
+from networking.clientsock import ClientSock
+from networking.serversock import serversock
 
 
 def main():
-    """Main process for blockchain node.
+    """
+    Main process for blockchain node.
     """
     logging.basicConfig(level=logging.INFO)
     logging.info('\nStarting node server...')
 
     # Unpack network file
-    with open(".network.json") as f:
+    with open("./photoblocks/network.json") as f:
         network = json.load(f)
 
     # Connect to database
     logging.info(f'\nStarting connection to the local database server...')
-    db = redis.Redis(host='127.0.0.1', port=6379)
+    db = redis.Redis(host='redis', port=6379)
     logging.info(f'\nConnected to the local database server.')
 
     # Construct Node object
