@@ -1,7 +1,7 @@
-FROM python:3.8-alpine
+FROM tensorflow/tensorflow
 WORKDIR /photoblocks
 COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+RUN python -m pip install -r requirements.txt
 EXPOSE 5000
 COPY ./photoblocks ./photoblocks
 CMD ["python3", "photoblocks/main.py"]

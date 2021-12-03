@@ -1,5 +1,6 @@
 import socket
 import logging
+import redis
 
 
 class ClientSock:
@@ -7,9 +8,8 @@ class ClientSock:
     Client socket
     """
 
-    def __init__(self, network, node, db):
+    def __init__(self, network, node):
         self.node = node
-        self.db = db
         self.peers = {peer:{int(port):values for port, values in ports.items()} for peer, ports in network["peers"].items()}
         self.seeds = self.fetchseeds()
 
@@ -22,13 +22,13 @@ class ClientSock:
         if len(self.seeds) is 0:
             logging.info(
                 f'\nNo seeds to validate data. You should add more seeds!')
-            return
         else:
             while True:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                     self.updatepeers(sock)
                     self.updatechain(sock)
-                self.store()
+        self.store()
+        return
 
     def fetchseeds(self):
         """
@@ -144,12 +144,18 @@ class ClientSock:
         """
         Stores seeds, peers, and blockchain data on a local Redis server.
         """
-        self.db.set("seeds", str(self.seeds))
-        self.db.set("peers", str(self.peers))
-        self.db.set("chain", str(self.node.blockchain))
-        pack = {
-            "id": self.node.node_id,
-            "ip": self.node.ip,
-            "port": self.node.port
-        }
-        self.db.set('pack', str(pack))
+        db = redis.Redis(host='redis', port=6379)
+        if db.execute_command('PING'):
+            db.set('seeds', str(self.seeds))
+            db.set('peers', str(self.peers))
+            db.set('chain', str(self.node.blockchain))
+            pack = {
+                "id": self.node.node_id,
+                "ip": self.node.ip,
+                "port": self.node.port
+            }
+            db.set('pack', str(pack))
+        else:
+            logging.error(
+                f'\nUnable to connect to local Redis server. Please restart the node.')
+            return
