@@ -13,6 +13,7 @@ import sys
 from models.node import Node
 from networking.clientsock import ClientSock
 from networking.serversock import serversock
+from servers.api import create_api, run_server
 
 
 def initialize_redis(max_retries=3, retry_delay=5):
@@ -61,14 +62,12 @@ def main():
         except KeyError as e:
             raise ConfigurationError(f"Invalid network configuration: {e}")
 
-        # Start threads
+        # Start P2P network threads
         client_thread = start_thread(
             target=ClientSock,
             args=(network, node),
             thread_name="client_socket"
         )
-        
-        time.sleep(5)  # Allow client thread to initialize
         
         server_thread = start_thread(
             target=serversock,
@@ -76,11 +75,13 @@ def main():
             thread_name="server_socket"
         )
 
-        # Monitor threads
-        while True:
-            if not (client_thread.is_alive() and server_thread.is_alive()):
-                raise NetworkError("Critical thread failure detected")
-            time.sleep(5)
+        # Start REST API server in main thread
+        run_server(
+            pack=network["local"],
+            db=db,
+            host=node.host,
+            port=node.port
+        )
 
     except Exception as e:
         logging.error(f"Critical error: {e}")
