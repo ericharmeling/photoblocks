@@ -1,6 +1,7 @@
 import socket
 import logging
 import redis
+from photoblocks.exceptions import NetworkError, ConsensusError, ValidationError
 
 
 class ClientSock:
@@ -9,11 +10,23 @@ class ClientSock:
     """
 
     def __init__(self, network, node):
-        self.node = node
-        self.peers = {peer:{int(port):values for port, values in ports.items()} for peer, ports in network["peers"].items()}
-        self.seeds = self.fetchseeds()
+        try:
+            self.node = node
+            self.peers = self._parse_peers(network["peers"])
+            self.seeds = self.fetchseeds()
+            self.sync()
+        except Exception as e:
+            raise NetworkError(f"Failed to initialize client socket: {e}")
 
-        self.sync()
+    def _parse_peers(self, peer_data):
+        """Safely parse peer data"""
+        try:
+            return {
+                peer: {int(port): values for port, values in ports.items()}
+                for peer, ports in peer_data.items()
+            }
+        except (ValueError, AttributeError) as e:
+            raise ValidationError(f"Invalid peer data format: {e}")
 
     def sync(self):
         """
@@ -100,28 +113,53 @@ class ClientSock:
         Updates the blockchain.
         """
         chains = {}
+        valid_chains = 0
+        
         for address in self.seeds:
-            ip = address[0]
-            port = address[1]
             try:
-                logging.info(f'\nConnecting to seed node at {ip}:{port}...')
-                sock.connect((self.node.host, port))
-                logging.info(f'\nConnected to node at {ip}:{port}.')
-                sock.sendall('chain'.encode())
-                logging.info(
-                    f'\nFetching blockchain from node at {ip}:{port}...')
-                response = sock.recv(1024).decode()
-                if response:
-                    chains[address] = response
-                else:
-                    logging.info(
-                        f'\nNo response received from node at {ip}:{port}.')
-                    raise socket.error
-            except socket.error as e:
-                logging.info(
-                    f'\nError retrieving blockchain from node at {ip}:{port}.')
-                logging.info(f'\n{e}.')
+                chain = self._fetch_chain(sock, address)
+                if chain:
+                    chains[address] = chain
+                    valid_chains += 1
+            except NetworkError as e:
+                logging.warning(f"Failed to fetch chain from {address}: {e}")
                 continue
+
+        if not chains:
+            raise ConsensusError("Unable to fetch chain from any seed nodes")
+            
+        return self._validate_chains(chains)
+
+    def _fetch_chain(self, sock, address):
+        """
+        Fetches the blockchain from a seed node.
+        """
+        ip = address[0]
+        port = address[1]
+        try:
+            logging.info(f'\nConnecting to seed node at {ip}:{port}...')
+            sock.connect((ip, port))
+            logging.info(f'\nConnected to node at {ip}:{port}.')
+            sock.sendall('chain'.encode())
+            logging.info(
+                f'\nFetching blockchain from node at {ip}:{port}...')
+            response = sock.recv(1024).decode()
+            if response:
+                return response
+            else:
+                logging.info(
+                    f'\nNo response received from node at {ip}:{port}.')
+                raise socket.error
+        except socket.error as e:
+            logging.info(
+                f'\nError retrieving blockchain from node at {ip}:{port}.')
+            logging.info(f'\n{e}.')
+            raise NetworkError(f"Failed to fetch chain from {ip}:{port}: {e}")
+
+    def _validate_chains(self, chains):
+        """
+        Validates the blockchain.
+        """
         if len(chains) == 0:
             logging.info(
                 f'\nUnable to fetch data from existing seed nodes. Try again!')

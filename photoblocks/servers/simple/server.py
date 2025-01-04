@@ -1,5 +1,5 @@
 # This file starts up a server
-from servers.rest.handler import Handler
+from .handler import Handler
 from http.server import HTTPServer
 import logging
 import json
