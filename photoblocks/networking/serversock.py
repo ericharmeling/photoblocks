@@ -1,38 +1,27 @@
 import socket
 import logging
 import time
-import redis
 from photoblocks.exceptions import StorageError, NetworkError, ValidationError
 
 
-def serversock():
-    """
-    Broadcasts local node, peer, and blockchain data on network.
-    
-    Raises:
-        StorageError: If Redis connection fails
-        NetworkError: If socket operations fail
-        ValidationError: If data validation fails
-    """
+def serversock(storage):
+    """Broadcasts local node, peer, and blockchain data on network."""
     try:
-        db = redis.Redis(host='redis', port=6379)
-        if not db.execute_command('PING'):
-            raise StorageError("Unable to connect to local Redis server")
-        
-        pack = eval(db.get('pack').decode("utf-8"))
-        if not pack:
+        # Get pack data for binding
+        pack_data = storage.get_pack()
+        if not pack_data:
             raise ValidationError("Invalid or missing pack data")
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             logging.info('Node server socket open for connections.')
             try:
-                sock.bind(("", pack["port"]))
+                sock.bind(("", pack_data["port"]))
                 sock.listen(5)
                 
                 while True:
                     try:
-                        peer, address = sock.accept()
-                        with peer:  # Ensure socket gets closed
+                        peer, _ = sock.accept()
+                        with peer:
                             data = peer.recv(1024).decode()
                             if not data:
                                 time.sleep(5)
@@ -44,29 +33,27 @@ def serversock():
 
                             try:
                                 response = {
-                                    'chain': lambda: db.get("chain"),
-                                    'pack': lambda: db.get("pack"),
-                                    'peerlist': lambda: db.get("peers"),
+                                    'chain': lambda: storage.get_blockchain(),
+                                    'pack': lambda: storage.get_pack(),
+                                    'peerlist': lambda: storage.get_peers(),
                                     'ping': lambda: 'hello'.encode()
                                 }[data]()
                                 
                                 if not response and data != 'ping':
                                     raise StorageError(f"Missing {data} data in storage")
                                     
-                                peer.send(response if isinstance(response, bytes) else response.decode("utf-8").encode())
+                                peer.send(response if isinstance(response, bytes) else response.encode())
                                 
-                            except redis.RedisError as e:
-                                raise StorageError(f"Redis error while fetching {data}: {e}")
+                            except StorageError as e:
+                                logging.error(f"Storage error while fetching {data}: {e}")
+                                continue
                                 
-                    except (socket.error, ValidationError, StorageError) as e:
-                        logging.error(f"Connection error: {e}")
+                    except Exception as e:
+                        logging.error(f"Error handling peer request: {e}")
                         continue
                         
-            except socket.error as e:
-                if e.errno in (98, 99):
-                    raise NetworkError(f"Port {pack['port']} already in use")
+            except Exception as e:
                 raise NetworkError(f"Socket error: {e}")
                 
     except Exception as e:
-        logging.error(f"Critical server error: {e}")
-        raise
+        raise NetworkError(f"Server socket error: {e}")

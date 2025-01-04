@@ -1,7 +1,7 @@
 import socket
 import logging
-import redis
-from photoblocks.exceptions import NetworkError, ConsensusError, ValidationError
+from photoblocks.exceptions import NetworkError, ConsensusError, ValidationError, StorageError
+import json
 
 
 class ClientSock:
@@ -9,14 +9,18 @@ class ClientSock:
     Client socket
     """
 
-    def __init__(self, network, node):
+    def __init__(self, network, node, storage):
+        self.storage = storage
+        self.node = node
+        
+        # Initialize from storage
         try:
-            self.node = node
-            self.peers = self._parse_peers(network["peers"])
-            self.seeds = self.fetchseeds()
-            self.sync()
-        except Exception as e:
-            raise NetworkError(f"Failed to initialize client socket: {e}")
+            self.seeds = json.loads(self.storage.get_seeds() or '{}')
+            self.peers = json.loads(self.storage.get_peers() or '{}')
+        except (json.JSONDecodeError, StorageError) as e:
+            logging.error(f"Failed to initialize from storage: {e}")
+            self.seeds = {}
+            self.peers = {}
 
     def _parse_peers(self, peer_data):
         """Safely parse peer data"""
@@ -179,21 +183,17 @@ class ClientSock:
             return
 
     def store(self):
-        """
-        Stores seeds, peers, and blockchain data on a local Redis server.
-        """
-        db = redis.Redis(host='redis', port=6379)
-        if db.execute_command('PING'):
-            db.set('seeds', str(self.seeds))
-            db.set('peers', str(self.peers))
-            db.set('chain', str(self.node.blockchain))
+        """Store node data using storage interface"""
+        try:
+            self.storage.store_blockchain(self.node.blockchain)
+            self.storage.update_peers(self.peers)
+            self.storage.update_seeds(self.seeds)
             pack = {
                 "id": self.node.node_id,
                 "ip": self.node.ip,
                 "port": self.node.port
             }
-            db.set('pack', str(pack))
-        else:
-            logging.error(
-                f'\nUnable to connect to local Redis server. Please restart the node.')
+            self.storage.update_pack(pack)
+        except StorageError as e:
+            logging.error(f"Failed to store node data: {e}")
             return

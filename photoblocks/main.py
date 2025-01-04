@@ -14,6 +14,7 @@ from models.node import Node
 from networking.clientsock import ClientSock
 from networking.serversock import serversock
 from servers.api import create_api, run_server
+from photoblocks.storage import NodeStorage
 
 
 def initialize_redis(max_retries=3, retry_delay=5):
@@ -46,15 +47,12 @@ def main():
         logging.basicConfig(level=logging.INFO)
         logging.info('Starting node server...')
 
-        # Load network configuration
-        try:
-            with open("./photoblocks/network.json") as f:
-                network = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            raise ConfigurationError(f"Failed to load network configuration: {e}")
-
-        # Initialize Redis
+        # Initialize Redis and storage
         db = initialize_redis()
+        storage = NodeStorage(db)
+
+        # Load network configuration from scanner output
+        network = storage.load_network_config("./photoblocks/network.json")
 
         # Initialize node
         try:
@@ -62,16 +60,16 @@ def main():
         except KeyError as e:
             raise ConfigurationError(f"Invalid network configuration: {e}")
 
-        # Start P2P network threads
+        # Start P2P network threads with storage
         client_thread = start_thread(
             target=ClientSock,
-            args=(network, node),
+            args=(network, node, storage),  # Pass storage to ClientSock
             thread_name="client_socket"
         )
         
         server_thread = start_thread(
             target=serversock,
-            args=(),
+            args=(storage,),  # Pass storage to serversock
             thread_name="server_socket"
         )
 
@@ -79,6 +77,7 @@ def main():
         run_server(
             pack=network["local"],
             db=db,
+            storage=storage,  # Pass storage to API
             host=node.host,
             port=node.port
         )
