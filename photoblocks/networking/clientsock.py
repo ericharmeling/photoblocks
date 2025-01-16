@@ -1,6 +1,7 @@
 import socket
 import logging
-import redis
+from photoblocks.exceptions import NetworkError, ConsensusError, ValidationError, StorageError
+import json
 
 
 class ClientSock:
@@ -8,18 +9,34 @@ class ClientSock:
     Client socket
     """
 
-    def __init__(self, network, node):
+    def __init__(self, network, node, storage):
+        self.storage = storage
         self.node = node
-        self.peers = {peer:{int(port):values for port, values in ports.items()} for peer, ports in network["peers"].items()}
-        self.seeds = self.fetchseeds()
+        
+        # Initialize from storage
+        try:
+            self.seeds = json.loads(self.storage.get_seeds() or '{}')
+            self.peers = json.loads(self.storage.get_peers() or '{}')
+        except (json.JSONDecodeError, StorageError) as e:
+            logging.error(f"Failed to initialize from storage: {e}")
+            self.seeds = {}
+            self.peers = {}
 
-        self.sync()
+    def _parse_peers(self, peer_data):
+        """Safely parse peer data"""
+        try:
+            return {
+                peer: {int(port): values for port, values in ports.items()}
+                for peer, ports in peer_data.items()
+            }
+        except (ValueError, AttributeError) as e:
+            raise ValidationError(f"Invalid peer data format: {e}")
 
     def sync(self):
         """
         Updates peer list and blockchain. This function is run on a background thread.
         """
-        if len(self.seeds) is 0:
+        if len(self.seeds) == 0:
             logging.info(
                 f'\nNo seeds to validate data. You should add more seeds!')
         else:
@@ -40,12 +57,12 @@ class ClientSock:
             ports = ports[1:]
         for ip in self.peers:
             for port in ports:
-                if self.peers[ip][port] is 1:
+                if self.peers[ip][port] == 1:
                     logging.info(f'\nReading in scanned seed at {ip}:{port}.')
                     seeds.append((ip, port))
                 else:
                     logging.info(f'\nNo seed found at {ip}:{port}.')
-        if len(seeds) is 0:
+        if len(seeds) == 0:
             logging.info(
                 f'\nThe data on this node has not been validated against other nodes. You should add more seeds!')
         return seeds
@@ -100,28 +117,53 @@ class ClientSock:
         Updates the blockchain.
         """
         chains = {}
+        valid_chains = 0
+        
         for address in self.seeds:
-            ip = address[0]
-            port = address[1]
             try:
-                logging.info(f'\nConnecting to seed node at {ip}:{port}...')
-                sock.connect((self.node.host, port))
-                logging.info(f'\nConnected to node at {ip}:{port}.')
-                sock.sendall('chain'.encode())
-                logging.info(
-                    f'\nFetching blockchain from node at {ip}:{port}...')
-                response = sock.recv(1024).decode()
-                if response:
-                    chains[address] = response
-                else:
-                    logging.info(
-                        f'\nNo response received from node at {ip}:{port}.')
-                    raise socket.error
-            except socket.error as e:
-                logging.info(
-                    f'\nError retrieving blockchain from node at {ip}:{port}.')
-                logging.info(f'\n{e}.')
+                chain = self._fetch_chain(sock, address)
+                if chain:
+                    chains[address] = chain
+                    valid_chains += 1
+            except NetworkError as e:
+                logging.warning(f"Failed to fetch chain from {address}: {e}")
                 continue
+
+        if not chains:
+            raise ConsensusError("Unable to fetch chain from any seed nodes")
+            
+        return self._validate_chains(chains)
+
+    def _fetch_chain(self, sock, address):
+        """
+        Fetches the blockchain from a seed node.
+        """
+        ip = address[0]
+        port = address[1]
+        try:
+            logging.info(f'\nConnecting to seed node at {ip}:{port}...')
+            sock.connect((ip, port))
+            logging.info(f'\nConnected to node at {ip}:{port}.')
+            sock.sendall('chain'.encode())
+            logging.info(
+                f'\nFetching blockchain from node at {ip}:{port}...')
+            response = sock.recv(1024).decode()
+            if response:
+                return response
+            else:
+                logging.info(
+                    f'\nNo response received from node at {ip}:{port}.')
+                raise socket.error
+        except socket.error as e:
+            logging.info(
+                f'\nError retrieving blockchain from node at {ip}:{port}.')
+            logging.info(f'\n{e}.')
+            raise NetworkError(f"Failed to fetch chain from {ip}:{port}: {e}")
+
+    def _validate_chains(self, chains):
+        """
+        Validates the blockchain.
+        """
         if len(chains) == 0:
             logging.info(
                 f'\nUnable to fetch data from existing seed nodes. Try again!')
@@ -141,21 +183,17 @@ class ClientSock:
             return
 
     def store(self):
-        """
-        Stores seeds, peers, and blockchain data on a local Redis server.
-        """
-        db = redis.Redis(host='redis', port=6379)
-        if db.execute_command('PING'):
-            db.set('seeds', str(self.seeds))
-            db.set('peers', str(self.peers))
-            db.set('chain', str(self.node.blockchain))
+        """Store node data using storage interface"""
+        try:
+            self.storage.store_blockchain(self.node.blockchain)
+            self.storage.update_peers(self.peers)
+            self.storage.update_seeds(self.seeds)
             pack = {
                 "id": self.node.node_id,
                 "ip": self.node.ip,
                 "port": self.node.port
             }
-            db.set('pack', str(pack))
-        else:
-            logging.error(
-                f'\nUnable to connect to local Redis server. Please restart the node.')
+            self.storage.update_pack(pack)
+        except StorageError as e:
+            logging.error(f"Failed to store node data: {e}")
             return

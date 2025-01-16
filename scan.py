@@ -5,6 +5,8 @@ import argparse
 import scapy.all as scapy
 import re
 import json
+from photoblocks.storage import NodeStorage
+from photoblocks.exceptions import NetworkError, ConfigurationError
 
 
 def scan(ip, ports, sock):
@@ -56,6 +58,12 @@ def main():
     """
     logging.basicConfig(level=logging.INFO)
     logging.info('\nScanning network for available ports...')
+
+    # Initialize network data
+    network = {
+        "local": {},
+        "peers": {}
+    }
 
     # Initialize list of possible ports
     PORTS = list(range(7000, 7005))
@@ -133,10 +141,17 @@ def main():
 
     nodes[LOCAL_IP][local_port] = 5
     local_address = (LOCAL_IP, local_port)
-    network = {"local": local_address, "peers": nodes}
+    network["local"] = local_address
+    network["peers"] = nodes
 
-    with open("./photoblocks/network.json", mode="w") as f:
-        f.write(json.dumps(network))
+    # After scanning, store results using NodeStorage
+    try:
+        storage = NodeStorage(None)  # No Redis client needed for file operations
+        storage.save_network_config(network)  # New method to handle file writing
+        logging.info("Network configuration saved successfully")
+    except ConfigurationError as e:
+        logging.error(f"Failed to save network config: {e}")
+        raise
 
     return
 
