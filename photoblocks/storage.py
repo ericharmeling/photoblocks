@@ -9,17 +9,24 @@ class NodeStorage:
     def __init__(self, redis_client: redis.Redis):
         self.redis = redis_client
         
-    def load_network_config(self, filepath: str) -> Dict:
-        """Load network config written by scanner"""
+    def load_network_config(self, config_path: str) -> Dict:
+        """Load network configuration from JSON file"""
         try:
-            with open(filepath) as f:
-                network = json.load(f)
-                # Store network info in Redis for node access
-                self.redis.set('pack', json.dumps(network['local']))
-                self.redis.set('peers', json.dumps(network.get('peers', {})))
-                return network
-        except (IOError, json.JSONDecodeError) as e:
-            raise ConfigurationError(f"Failed to load network config: {e}")
+            with open(config_path) as f:
+                config = json.load(f)
+                
+            # Convert port string keys back to integers
+            if 'peers' in config:
+                for ip, ports in config['peers'].items():
+                    config['peers'][ip] = {int(port): value for port, value in ports.items()}
+                    
+            # Store local node info in Redis
+            if 'local' in config:
+                self.redis.set('pack', json.dumps(config['local']))
+                
+            return config
+        except Exception as e:
+            raise StorageError(f"Failed to load network config: {e}")
             
     def store_blockchain(self, chain: Any) -> None:
         """Store blockchain data"""
@@ -76,3 +83,10 @@ class NodeStorage:
             return json.loads(data.decode('utf-8'))
         except (redis.RedisError, json.JSONDecodeError) as e:
             raise StorageError(f"Failed to get pack: {e}") 
+
+    def update_seeds(self, seeds: Dict) -> None:
+        """Update seed node information"""
+        try:
+            self.redis.set('seeds', json.dumps(seeds))
+        except redis.RedisError as e:
+            raise StorageError(f"Failed to update seeds: {e}") 

@@ -1,6 +1,5 @@
 import falcon
 import json
-import logging
 import redis
 from photoblocks.exceptions import StorageError, ValidationError
 

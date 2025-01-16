@@ -1,6 +1,6 @@
 import datetime
-from .block import Block
-from models.image import Image
+from photoblocks.models.block import Block
+from photoblocks.models.image import Image
 import logging
 
 

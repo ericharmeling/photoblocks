@@ -36,7 +36,7 @@ class ClientSock:
         """
         Updates peer list and blockchain. This function is run on a background thread.
         """
-        if len(self.seeds) is 0:
+        if len(self.seeds) == 0:
             logging.info(
                 f'\nNo seeds to validate data. You should add more seeds!')
         else:
@@ -57,12 +57,12 @@ class ClientSock:
             ports = ports[1:]
         for ip in self.peers:
             for port in ports:
-                if self.peers[ip][port] is 1:
+                if self.peers[ip][port] == 1:
                     logging.info(f'\nReading in scanned seed at {ip}:{port}.')
                     seeds.append((ip, port))
                 else:
                     logging.info(f'\nNo seed found at {ip}:{port}.')
-        if len(seeds) is 0:
+        if len(seeds) == 0:
             logging.info(
                 f'\nThe data on this node has not been validated against other nodes. You should add more seeds!')
         return seeds
